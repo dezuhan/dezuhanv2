@@ -3,9 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Project, ArchiveItem } from '../types';
-import { DEFAULT_PROJECTS } from '../data';
-import { DEFAULT_BIO } from '../database/bio';
-import { DEFAULT_ARCHIVE } from '../database/archive';
+import { DEFAULT_PROJECTS, DEFAULT_ARCHIVE, DEFAULT_BIO } from '../database';
 import { ProjectDetail } from '../components/ProjectDetail';
 import { Moon, Sun, X, Menu, Check } from 'lucide-react';
 
@@ -65,21 +63,10 @@ export default function Home() {
     // Archive Expansion State
     const [expandedArchiveId, setExpandedArchiveId] = useState<number | null>(null);
 
-    // Content State - Initialize with Defaults, then load from LocalStorage
-    const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
-    const [archive, setArchive] = useState<ArchiveItem[]>(DEFAULT_ARCHIVE);
-    const [bio, setBio] = useState<string>(DEFAULT_BIO);
-
-    // Load Data from LocalStorage on Mount (Simulating Backend Connection)
-    useEffect(() => {
-        const storedProjects = localStorage.getItem('dezuhan_projects');
-        const storedArchive = localStorage.getItem('dezuhan_archive');
-        const storedBio = localStorage.getItem('dezuhan_bio');
-
-        if (storedProjects) setProjects(JSON.parse(storedProjects));
-        if (storedArchive) setArchive(JSON.parse(storedArchive));
-        if (storedBio) setBio(storedBio);
-    }, []);
+    // Content State - Directly from database files
+    const [projects] = useState<Project[]>(DEFAULT_PROJECTS);
+    const [archive] = useState<ArchiveItem[]>(DEFAULT_ARCHIVE);
+    const [bio] = useState<string>(DEFAULT_BIO);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const lastScrollTime = useRef(0);
