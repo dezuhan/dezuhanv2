@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Project } from '../types';
+import Link from 'next/link';
+import { Project, ArchiveItem } from '../types';
 import { DEFAULT_PROJECTS } from '../data';
 import { DEFAULT_BIO } from '../database/bio';
 import { DEFAULT_ARCHIVE } from '../database/archive';
@@ -46,6 +47,7 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
             <div className="flex flex-col gap-1 text-right">
                 <a href="mailto:dezuhan.contact@gmail.com" className="hover:opacity-100 opacity-50 transition-opacity">dezuhan.contact@gmail.com</a>
                 <p className="opacity-50">(+62) 851 5621 6653</p>
+                <Link href="/admin" className="opacity-10 hover:opacity-100 transition-opacity mt-2">Admin</Link>
             </div>
         </div>
     </footer>
@@ -63,10 +65,21 @@ export default function Home() {
     // Archive Expansion State
     const [expandedArchiveId, setExpandedArchiveId] = useState<number | null>(null);
 
-    // Content State
-    const projects: Project[] = DEFAULT_PROJECTS;
-    const bio: string = DEFAULT_BIO;
-    const archive = DEFAULT_ARCHIVE;
+    // Content State - Initialize with Defaults, then load from LocalStorage
+    const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
+    const [archive, setArchive] = useState<ArchiveItem[]>(DEFAULT_ARCHIVE);
+    const [bio, setBio] = useState<string>(DEFAULT_BIO);
+
+    // Load Data from LocalStorage on Mount (Simulating Backend Connection)
+    useEffect(() => {
+        const storedProjects = localStorage.getItem('dezuhan_projects');
+        const storedArchive = localStorage.getItem('dezuhan_archive');
+        const storedBio = localStorage.getItem('dezuhan_bio');
+
+        if (storedProjects) setProjects(JSON.parse(storedProjects));
+        if (storedArchive) setArchive(JSON.parse(storedArchive));
+        if (storedBio) setBio(storedBio);
+    }, []);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const lastScrollTime = useRef(0);
