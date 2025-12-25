@@ -54,7 +54,7 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
 // --- Main App ---
 
 export default function Home() {
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [activeIndex, setActiveIndex] = useState(0); 
     const [view, setView] = useState<'home' | 'work' | 'archive' | 'about' | 'detail'>('home');
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);

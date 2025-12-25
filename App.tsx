@@ -47,7 +47,7 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
 // --- Main App ---
 
 const App: React.FC = () => {
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const [theme, setTheme] = useState<'light' | 'dark'>('dark');
     const [activeIndex, setActiveIndex] = useState(0); 
     const [view, setView] = useState<'home' | 'work' | 'archive' | 'about' | 'detail'>('home');
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -475,7 +475,7 @@ const App: React.FC = () => {
                 </nav>
 
                 {/* Mobile Menu Button */}
-                <button
+                <button 
                     onClick={() => setIsMenuOpen(true)}
                     className="md:hidden z-50 pointer-events-auto p-1"
                 >
