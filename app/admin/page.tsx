@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Project, ArchiveItem } from '../../types';
 import { getGitHubFile, updateGitHubFile, loginAdmin } from '../actions';
-import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2 } from 'lucide-react';
+import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical } from 'lucide-react';
 import Link from 'next/link';
 
 // --- Types ---
@@ -63,6 +63,10 @@ export default function AdminPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [archive, setArchive] = useState<ArchiveItem[]>([]);
     const [bio, setBio] = useState<string>("");
+
+    // Drag & Drop State
+    const dragItem = useRef<number | null>(null);
+    const dragOverItem = useRef<number | null>(null);
 
     // File SHA Tracking
     const [shas, setShas] = useState({ projects: '', archive: '', bio: '' });
@@ -162,6 +166,49 @@ export default function AdminPage() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    // --- Drag and Drop Logic ---
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        dragItem.current = index;
+        // visual effect only
+        e.dataTransfer.effectAllowed = "move";
+        // Ghost image usually handles itself, but we can style the row being dragged via state if needed
+        // For now, we rely on the `dragging` class or style
+    };
+
+    const handleDragEnter = (e: React.DragEvent, index: number, type: 'projects' | 'archive') => {
+        // Prevent sorting if we aren't dragging anything or dragging over the same item
+        if (dragItem.current === null || dragItem.current === index) return;
+
+        if (type === 'projects') {
+            const newProjects = [...projects];
+            const draggedItemContent = newProjects[dragItem.current];
+            
+            // Remove from old pos
+            newProjects.splice(dragItem.current, 1);
+            // Insert at new pos
+            newProjects.splice(index, 0, draggedItemContent);
+            
+            setProjects(newProjects);
+            dragItem.current = index; // Update the reference to the new position
+        } 
+        else if (type === 'archive') {
+            const newArchive = [...archive];
+            const draggedItemContent = newArchive[dragItem.current];
+            
+            newArchive.splice(dragItem.current, 1);
+            newArchive.splice(index, 0, draggedItemContent);
+            
+            setArchive(newArchive);
+            dragItem.current = index;
+        }
+    };
+
+    const handleDragEnd = () => {
+        dragItem.current = null;
+        dragOverItem.current = null;
     };
 
     // --- CRUD Logic ---
@@ -340,115 +387,131 @@ export default function AdminPage() {
                                 <span className="font-bold">Create New Project</span>
                             </button>
 
-                            {projects.map((project) => (
-                                <div key={project.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 relative group">
-                                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => deleteProject(project.id)} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded">
-                                            <Trash2 size={16} />
-                                        </button>
+                            {projects.map((project, index) => (
+                                <div 
+                                    key={project.id} 
+                                    className="bg-neutral-900 border border-neutral-800 rounded-xl flex overflow-hidden group transition-all duration-200 hover:border-neutral-600"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragEnter={(e) => handleDragEnter(e, index, 'projects')}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => e.preventDefault()}
+                                >
+                                    {/* Drag Handle */}
+                                    <div className="w-8 bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center cursor-move transition-colors shrink-0">
+                                        <GripVertical size={16} className="text-neutral-500" />
                                     </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                        {/* Image Preview */}
-                                        <div className="lg:col-span-3">
-                                            <div className="aspect-[4/3] bg-neutral-950 rounded overflow-hidden mb-2">
-                                                <img src={project.image} className="w-full h-full object-cover" alt="Preview" />
-                                            </div>
-                                            <input 
-                                                type="text"
-                                                value={project.image}
-                                                onChange={e => updateProject(project.id, 'image', e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-800 rounded p-2 text-xs text-neutral-400 font-mono"
-                                                placeholder="Cover Image URL"
-                                            />
+                                    {/* Card Content */}
+                                    <div className="p-6 flex-1 relative">
+                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => deleteProject(project.id)} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded">
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
 
-                                        {/* Form Fields */}
-                                        <div className="lg:col-span-9 space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="col-span-2 md:col-span-1">
-                                                    <label className={labelStyle}>Title</label>
-                                                    <input 
-                                                        value={project.title}
-                                                        onChange={e => updateProject(project.id, 'title', e.target.value)}
-                                                        className={`${inputStyle} text-lg font-bold`} 
-                                                    />
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                            {/* Image Preview */}
+                                            <div className="lg:col-span-3">
+                                                <div className="aspect-[4/3] bg-neutral-950 rounded overflow-hidden mb-2">
+                                                    <img src={project.image} className="w-full h-full object-cover" alt="Preview" />
                                                 </div>
-                                                <div className="col-span-2 md:col-span-1">
-                                                    <label className={labelStyle}>Client</label>
-                                                    <input 
-                                                        value={project.client || ''}
-                                                        onChange={e => updateProject(project.id, 'client', e.target.value)}
-                                                        className={inputStyle} 
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className={labelStyle}>Role</label>
-                                                    <input 
-                                                        value={project.role || ''}
-                                                        onChange={e => updateProject(project.id, 'role', e.target.value)}
-                                                        className={inputStyle} 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className={labelStyle}>Year</label>
-                                                    <input 
-                                                        value={project.year || ''}
-                                                        onChange={e => updateProject(project.id, 'year', e.target.value)}
-                                                        className={inputStyle} 
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className={labelStyle}>Description (Short)</label>
                                                 <input 
-                                                    value={project.description}
-                                                    onChange={e => updateProject(project.id, 'description', e.target.value)}
-                                                    className={inputStyle} 
+                                                    type="text"
+                                                    value={project.image}
+                                                    onChange={e => updateProject(project.id, 'image', e.target.value)}
+                                                    className="w-full bg-neutral-950 border border-neutral-800 rounded p-2 text-xs text-neutral-400 font-mono"
+                                                    placeholder="Cover Image URL"
                                                 />
                                             </div>
 
-                                            <div>
-                                                <label className={labelStyle}>Content (Full Detail)</label>
-                                                <textarea 
-                                                    value={project.content || ''}
-                                                    onChange={e => updateProject(project.id, 'content', e.target.value)}
-                                                    className={`${inputStyle} min-h-[100px]`} 
-                                                />
-                                            </div>
+                                            {/* Form Fields */}
+                                            <div className="lg:col-span-9 space-y-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="col-span-2 md:col-span-1">
+                                                        <label className={labelStyle}>Title</label>
+                                                        <input 
+                                                            value={project.title}
+                                                            onChange={e => updateProject(project.id, 'title', e.target.value)}
+                                                            className={`${inputStyle} text-lg font-bold`} 
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 md:col-span-1">
+                                                        <label className={labelStyle}>Client</label>
+                                                        <input 
+                                                            value={project.client || ''}
+                                                            onChange={e => updateProject(project.id, 'client', e.target.value)}
+                                                            className={inputStyle} 
+                                                        />
+                                                    </div>
+                                                </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className={labelStyle}>Role</label>
+                                                        <input 
+                                                            value={project.role || ''}
+                                                            onChange={e => updateProject(project.id, 'role', e.target.value)}
+                                                            className={inputStyle} 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelStyle}>Year</label>
+                                                        <input 
+                                                            value={project.year || ''}
+                                                            onChange={e => updateProject(project.id, 'year', e.target.value)}
+                                                            className={inputStyle} 
+                                                        />
+                                                    </div>
+                                                </div>
+
                                                 <div>
-                                                    <label className={labelStyle}>Tech Stack (Comma Separated)</label>
+                                                    <label className={labelStyle}>Description (Short)</label>
                                                     <input 
-                                                        value={project.tech.join(", ")}
-                                                        onChange={e => updateProject(project.id, 'tech', e.target.value.split(',').map(s => s.trim()))}
+                                                        value={project.description}
+                                                        onChange={e => updateProject(project.id, 'description', e.target.value)}
                                                         className={inputStyle} 
                                                     />
                                                 </div>
+
                                                 <div>
-                                                    <label className={labelStyle}>Live Link</label>
-                                                    <input 
-                                                        value={project.link || ''}
-                                                        onChange={e => updateProject(project.id, 'link', e.target.value)}
-                                                        className={inputStyle} 
+                                                    <label className={labelStyle}>Content (Full Detail)</label>
+                                                    <textarea 
+                                                        value={project.content || ''}
+                                                        onChange={e => updateProject(project.id, 'content', e.target.value)}
+                                                        className={`${inputStyle} min-h-[100px]`} 
                                                     />
                                                 </div>
-                                            </div>
 
-                                            {/* Gallery Management */}
-                                            <div>
-                                                <label className={labelStyle}>Gallery Images (New lines or comma separated)</label>
-                                                <textarea
-                                                    value={(project.gallery || []).join('\n')}
-                                                    onChange={e => updateProject(project.id, 'gallery', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
-                                                    className={`${inputStyle} text-xs font-mono min-h-[80px]`}
-                                                    placeholder="https://example.com/image1.jpg"
-                                                />
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className={labelStyle}>Tech Stack (Comma Separated)</label>
+                                                        <input 
+                                                            value={project.tech.join(", ")}
+                                                            onChange={e => updateProject(project.id, 'tech', e.target.value.split(',').map(s => s.trim()))}
+                                                            className={inputStyle} 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelStyle}>Live Link</label>
+                                                        <input 
+                                                            value={project.link || ''}
+                                                            onChange={e => updateProject(project.id, 'link', e.target.value)}
+                                                            className={inputStyle} 
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Gallery Management */}
+                                                <div>
+                                                    <label className={labelStyle}>Gallery Images (New lines or comma separated)</label>
+                                                    <textarea
+                                                        value={(project.gallery || []).join('\n')}
+                                                        onChange={e => updateProject(project.id, 'gallery', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
+                                                        className={`${inputStyle} text-xs font-mono min-h-[80px]`}
+                                                        placeholder="https://example.com/image1.jpg"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -465,84 +528,99 @@ export default function AdminPage() {
                                 <span className="font-bold">Add Archive Entry</span>
                             </button>
 
-                            {archive.map((item) => (
-                                <div key={item.id} className="bg-neutral-900 border border-neutral-800 rounded-lg p-6 relative group flex flex-col gap-4">
-                                     <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => deleteArchive(item.id)} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded">
-                                            <Trash2 size={16} />
-                                        </button>
+                            {archive.map((item, index) => (
+                                <div 
+                                    key={item.id} 
+                                    className="bg-neutral-900 border border-neutral-800 rounded-lg flex overflow-hidden group transition-all duration-200 hover:border-neutral-600"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragEnter={(e) => handleDragEnter(e, index, 'archive')}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => e.preventDefault()}
+                                >
+                                    {/* Drag Handle */}
+                                    <div className="w-8 bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center cursor-move transition-colors shrink-0">
+                                        <GripVertical size={16} className="text-neutral-500" />
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div className="md:col-span-1">
-                                            <label className={labelStyle}>Date</label>
-                                            <input 
-                                                value={item.date}
-                                                onChange={e => updateArchive(item.id, 'date', e.target.value)}
-                                                className={`${inputStyle} font-mono`} 
-                                            />
+                                    <div className="p-6 flex-1 relative flex flex-col gap-4">
+                                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => deleteArchive(item.id)} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded">
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
-                                        <div className="md:col-span-1">
-                                            <label className={labelStyle}>Year</label>
-                                            <input 
-                                                value={item.year}
-                                                onChange={e => updateArchive(item.id, 'year', e.target.value)}
-                                                className={`${inputStyle} font-mono`} 
-                                            />
-                                        </div>
-                                        <div className="md:col-span-1">
-                                            <label className={labelStyle}>Type</label>
-                                            <input 
-                                                value={item.type}
-                                                onChange={e => updateArchive(item.id, 'type', e.target.value)}
-                                                className={inputStyle} 
-                                            />
-                                        </div>
-                                         <div className="md:col-span-1">
-                                            <label className={labelStyle}>Location</label>
-                                            <input 
-                                                value={item.location || ''}
-                                                onChange={e => updateArchive(item.id, 'location', e.target.value)}
-                                                className={inputStyle} 
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                            <div className="md:col-span-1">
+                                                <label className={labelStyle}>Date</label>
+                                                <input 
+                                                    value={item.date}
+                                                    onChange={e => updateArchive(item.id, 'date', e.target.value)}
+                                                    className={`${inputStyle} font-mono`} 
+                                                />
+                                            </div>
+                                            <div className="md:col-span-1">
+                                                <label className={labelStyle}>Year</label>
+                                                <input 
+                                                    value={item.year}
+                                                    onChange={e => updateArchive(item.id, 'year', e.target.value)}
+                                                    className={`${inputStyle} font-mono`} 
+                                                />
+                                            </div>
+                                            <div className="md:col-span-1">
+                                                <label className={labelStyle}>Type</label>
+                                                <input 
+                                                    value={item.type}
+                                                    onChange={e => updateArchive(item.id, 'type', e.target.value)}
+                                                    className={inputStyle} 
+                                                />
+                                            </div>
+                                             <div className="md:col-span-1">
+                                                <label className={labelStyle}>Location</label>
+                                                <input 
+                                                    value={item.location || ''}
+                                                    onChange={e => updateArchive(item.id, 'location', e.target.value)}
+                                                    className={inputStyle} 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className={labelStyle}>Role</label>
+                                                <input 
+                                                    value={item.role}
+                                                    onChange={e => updateArchive(item.id, 'role', e.target.value)}
+                                                    className={`${inputStyle} font-bold text-lg`} 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={labelStyle}>Company</label>
+                                                <input 
+                                                    value={item.company}
+                                                    onChange={e => updateArchive(item.id, 'company', e.target.value)}
+                                                    className={inputStyle} 
+                                                />
+                                            </div>
+                                        </div>
+
                                         <div>
-                                            <label className={labelStyle}>Role</label>
+                                            <label className={labelStyle}>Skills</label>
                                             <input 
-                                                value={item.role}
-                                                onChange={e => updateArchive(item.id, 'role', e.target.value)}
-                                                className={`${inputStyle} font-bold text-lg`} 
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className={labelStyle}>Company</label>
-                                            <input 
-                                                value={item.company}
-                                                onChange={e => updateArchive(item.id, 'company', e.target.value)}
+                                                value={item.skills || ''}
+                                                onChange={e => updateArchive(item.id, 'skills', e.target.value)}
                                                 className={inputStyle} 
                                             />
                                         </div>
-                                    </div>
 
-                                    <div>
-                                        <label className={labelStyle}>Skills</label>
-                                        <input 
-                                            value={item.skills || ''}
-                                            onChange={e => updateArchive(item.id, 'skills', e.target.value)}
-                                            className={inputStyle} 
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className={labelStyle}>Details (Bullet points, one per line)</label>
-                                        <textarea 
-                                            value={(item.details || []).join('\n')}
-                                            onChange={e => updateArchive(item.id, 'details', e.target.value.split('\n').filter(Boolean))}
-                                            className={`${inputStyle} min-h-[100px]`} 
-                                        />
+                                        <div>
+                                            <label className={labelStyle}>Details (Bullet points, one per line)</label>
+                                            <textarea 
+                                                value={(item.details || []).join('\n')}
+                                                onChange={e => updateArchive(item.id, 'details', e.target.value.split('\n').filter(Boolean))}
+                                                className={`${inputStyle} min-h-[100px]`} 
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
