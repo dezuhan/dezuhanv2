@@ -36,7 +36,7 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
         </div>
         
         {/* Right Side: Links & Contact */}
-        <div className="order-1 md:order-2 w-full md:w-auto flex flex-col md:flex-row items-start gap-8 md:gap-12 text-left">
+        <div className="order-1 md:order-2 w-full md:w-auto flex flex-row md:flex-row items-start gap-8 md:gap-12 text-left">
             <div className="flex flex-col gap-1">
                 <a href="https://instagram.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Instagram</a>
                 <a href="https://linkedin.com/in/dzuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">LinkedIn</a>

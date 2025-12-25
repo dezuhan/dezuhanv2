@@ -475,7 +475,7 @@ const App: React.FC = () => {
                 </nav>
 
                 {/* Mobile Menu Button */}
-                <button 
+                <button
                     onClick={() => setIsMenuOpen(true)}
                     className="md:hidden z-50 pointer-events-auto p-1"
                 >
