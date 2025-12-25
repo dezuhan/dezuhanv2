@@ -6,7 +6,7 @@ import { DEFAULT_PROJECTS } from '../data';
 import { DEFAULT_BIO } from '../database/bio';
 import { DEFAULT_ARCHIVE } from '../database/archive';
 import { ProjectDetail } from '../components/ProjectDetail';
-import { Moon, Sun, X, Menu, Pen, RotateCcw, Check } from 'lucide-react';
+import { Moon, Sun, X, Menu, Check } from 'lucide-react';
 
 // --- Components ---
 
@@ -63,23 +63,9 @@ export default function Home() {
     // Archive Expansion State
     const [expandedArchiveId, setExpandedArchiveId] = useState<number | null>(null);
 
-    // Content State (CMS Mode)
-    const [isStudioMode, setIsStudioMode] = useState(false);
-    const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
-    const [bio, setBio] = useState<string>(DEFAULT_BIO);
-
-    // Initialize projects and bio from localStorage on mount (client-side only)
-    useEffect(() => {
-        const savedProjects = localStorage.getItem('dezuhan_projects');
-        if (savedProjects) {
-            setProjects(JSON.parse(savedProjects));
-        }
-        const savedBio = localStorage.getItem('dezuhan_bio');
-        if (savedBio) {
-            setBio(savedBio);
-        }
-    }, []);
-
+    // Content State
+    const projects: Project[] = DEFAULT_PROJECTS;
+    const bio: string = DEFAULT_BIO;
     const archive = DEFAULT_ARCHIVE;
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -99,32 +85,7 @@ export default function Home() {
         }
     }, [theme]);
 
-    // Persistence Effect
-    useEffect(() => {
-        // Only persist if changed from defaults to avoid overwriting SSR mismatch issues if possible, 
-        // but for this simple app, we just write.
-        if (projects !== DEFAULT_PROJECTS) {
-            localStorage.setItem('dezuhan_projects', JSON.stringify(projects));
-        }
-        if (bio !== DEFAULT_BIO) {
-            localStorage.setItem('dezuhan_bio', bio);
-        }
-    }, [projects, bio]);
-
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-
-    const updateProject = (id: number, field: keyof Project, value: any) => {
-        setProjects(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
-    };
-
-    const resetContent = () => {
-        if (window.confirm("Are you sure you want to reset all content to default?")) {
-            setProjects(DEFAULT_PROJECTS);
-            setBio(DEFAULT_BIO);
-            localStorage.removeItem('dezuhan_projects');
-            localStorage.removeItem('dezuhan_bio');
-        }
-    };
 
     const handleProjectClick = (projectId: number) => {
         if (!isDragging.current) {
@@ -155,19 +116,17 @@ export default function Home() {
     // Handle Keyboard
     useEffect(() => {
          const handleKey = (e: KeyboardEvent) => {
-             if (isStudioMode && (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA')) return;
              if (view !== 'home') return;
              if (e.key === 'ArrowRight') setActiveIndex(prev => prev + 1);
              if (e.key === 'ArrowLeft') setActiveIndex(prev => prev - 1);
          };
          window.addEventListener('keydown', handleKey);
          return () => window.removeEventListener('keydown', handleKey);
-    }, [view, isStudioMode]);
+    }, [view]);
 
     // Handle Drag/Swipe (Only on Home)
     const handleMouseDown = (e: React.MouseEvent) => {
         if (view !== 'home') return;
-        if (isStudioMode && (e.target as HTMLElement).closest('input, textarea')) return;
         
         isDragging.current = true;
         startX.current = e.clientX;
@@ -252,29 +211,8 @@ export default function Home() {
                         </div>
 
                         <div className={`transition-opacity duration-500 ${isActive ? 'opacity-100 delay-200' : 'opacity-0'} flex flex-col gap-2`}>
-                            {isStudioMode && isActive ? (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                    <input 
-                                        type="text"
-                                        value={project.title}
-                                        onChange={(e) => updateProject(project.id, 'title', e.target.value)}
-                                        className="bg-transparent border-b border-current/20 focus:border-red-500 focus:outline-none text-xl md:text-2xl font-bold tracking-tight w-full"
-                                        placeholder="Project Title"
-                                    />
-                                    <input 
-                                        type="text"
-                                        value={project.tech.join(" / ")}
-                                        onChange={(e) => updateProject(project.id, 'tech', e.target.value.split(" / "))}
-                                        className="bg-transparent border-b border-current/20 focus:border-red-500 focus:outline-none text-sm text-gray-500 dark:text-gray-400 w-full"
-                                        placeholder="Tech 1 / Tech 2"
-                                    />
-                                </div>
-                            ) : (
-                                <>
-                                    <h3 className="text-xl md:text-2xl font-bold tracking-tight select-none">{project.title}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 select-none">{project.tech.join(" / ")}</p>
-                                </>
-                            )}
+                            <h3 className="text-xl md:text-2xl font-bold tracking-tight select-none">{project.title}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 select-none">{project.tech.join(" / ")}</p>
                         </div>
                     </div>
                 );
@@ -409,20 +347,9 @@ export default function Home() {
             <div className="flex-1 w-full px-6 md:px-12 pt-32 pb-32">
                  <div className="max-w-7xl mx-auto">
                     <div className="mb-24">
-                        {isStudioMode ? (
-                            <div className="space-y-4">
-                                <label className="text-xs font-mono uppercase opacity-50 block">Edit Bio</label>
-                                <textarea 
-                                    value={bio}
-                                    onChange={(e) => setBio(e.target.value)}
-                                    className="w-full h-[600px] text-4xl md:text-7xl font-medium tracking-tight leading-[1.1] bg-white/5 border border-current/20 rounded-lg p-6 focus:outline-none focus:ring-2 focus:ring-current/20 resize-none font-sans"
-                                />
-                            </div>
-                        ) : (
-                            <h2 className="text-4xl md:text-7xl font-medium tracking-tight leading-[1.1] mb-8 whitespace-pre-line">
-                                {bio}
-                            </h2>
-                        )}
+                        <h2 className="text-4xl md:text-7xl font-medium tracking-tight leading-[1.1] mb-8 whitespace-pre-line">
+                            {bio}
+                        </h2>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24 text-base pt-12 border-t border-current/10">
@@ -472,14 +399,6 @@ export default function Home() {
                     >
                         Dezuhan
                     </button>
-                    {isStudioMode && (
-                        <div className="flex items-center gap-2">
-                             <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold tracking-wider animate-pulse">STUDIO MODE</span>
-                             <button onClick={resetContent} className="text-[10px] underline opacity-50 hover:opacity-100 flex items-center gap-1">
-                                <RotateCcw size={10} /> Reset
-                             </button>
-                        </div>
-                    )}
                 </div>
 
                 <nav className="hidden md:flex items-start gap-8 md:gap-12 z-50 pointer-events-auto">
@@ -503,13 +422,6 @@ export default function Home() {
                     </button>
                     
                     <div className="flex items-center gap-6 pl-6 border-l border-current border-opacity-20">
-                        <button 
-                            onClick={() => setIsStudioMode(!isStudioMode)} 
-                            className={`hover:opacity-100 transition-all ${isStudioMode ? 'text-red-500 opacity-100' : 'opacity-40'}`}
-                            title="Toggle Studio Edit Mode"
-                        >
-                            <Pen size={14} />
-                        </button>
                         <button onClick={toggleTheme} className="hover:opacity-70 transition-opacity">
                             {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
                         </button>
@@ -567,13 +479,6 @@ export default function Home() {
                     <div className="flex justify-between items-end border-t border-current border-opacity-10 pt-6">
                         <div className="flex gap-4">
                             <button 
-                                onClick={() => setIsStudioMode(!isStudioMode)} 
-                                className={`flex items-center gap-2 text-xs font-bold tracking-widest uppercase ${isStudioMode ? 'text-red-500' : ''}`}
-                            >
-                                <Pen size={14} />
-                                Studio
-                            </button>
-                            <button 
                                 onClick={toggleTheme} 
                                 className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase"
                             >
@@ -610,8 +515,6 @@ export default function Home() {
                 <ProjectDetail 
                     project={projects.find(p => p.id === selectedProjectId)!}
                     onBack={() => setView('work')}
-                    isStudioMode={isStudioMode}
-                    onUpdate={updateProject}
                 />
             )}
 

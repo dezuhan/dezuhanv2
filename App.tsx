@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Project, ArchiveItem } from './types';
 import { DEFAULT_PROJECTS, DEFAULT_BIO, DEFAULT_ARCHIVE } from './database';
 import { ProjectDetail } from './components/ProjectDetail';
-import { Moon, Sun, X, Menu, Pen, RotateCcw, Check, Circle } from 'lucide-react';
+import { Moon, Sun, X, Menu, Check, Circle } from 'lucide-react';
 
 // --- Components ---
 
@@ -56,17 +56,9 @@ const App: React.FC = () => {
     // Archive Expansion State
     const [expandedArchiveId, setExpandedArchiveId] = useState<number | null>(null);
 
-    // Content State (CMS Mode)
-    const [isStudioMode, setIsStudioMode] = useState(false);
-    const [projects, setProjects] = useState<Project[]>(() => {
-        const saved = localStorage.getItem('dezuhan_projects');
-        return saved ? JSON.parse(saved) : DEFAULT_PROJECTS;
-    });
-    const [bio, setBio] = useState<string>(() => {
-        const saved = localStorage.getItem('dezuhan_bio');
-        return saved ? saved : DEFAULT_BIO;
-    });
-    // Archive data is generally static for this demo, but could be stateful if we wanted to edit it
+    // Content State
+    const projects: Project[] = DEFAULT_PROJECTS;
+    const bio: string = DEFAULT_BIO;
     const archive = DEFAULT_ARCHIVE;
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -86,24 +78,7 @@ const App: React.FC = () => {
         }
     }, [theme]);
 
-    // Persistence Effect
-    useEffect(() => {
-        localStorage.setItem('dezuhan_projects', JSON.stringify(projects));
-        localStorage.setItem('dezuhan_bio', bio);
-    }, [projects, bio]);
-
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-
-    const updateProject = (id: number, field: keyof Project, value: any) => {
-        setProjects(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
-    };
-
-    const resetContent = () => {
-        if (window.confirm("Are you sure you want to reset all content to default?")) {
-            setProjects(DEFAULT_PROJECTS);
-            setBio(DEFAULT_BIO);
-        }
-    };
 
     const handleProjectClick = (projectId: number) => {
         if (!isDragging.current) {
@@ -136,21 +111,17 @@ const App: React.FC = () => {
     // Handle Keyboard
     useEffect(() => {
          const handleKey = (e: KeyboardEvent) => {
-             // Don't intercept arrow keys if editing
-             if (isStudioMode && (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA')) return;
              if (view !== 'home') return; // Only scroll carousel on home
              if (e.key === 'ArrowRight') setActiveIndex(prev => prev + 1);
              if (e.key === 'ArrowLeft') setActiveIndex(prev => prev - 1);
          };
          window.addEventListener('keydown', handleKey);
          return () => window.removeEventListener('keydown', handleKey);
-    }, [view, isStudioMode]);
+    }, [view]);
 
     // Handle Drag/Swipe (Only on Home)
     const handleMouseDown = (e: React.MouseEvent) => {
         if (view !== 'home') return;
-        // Allow text selection in Studio Mode
-        if (isStudioMode && (e.target as HTMLElement).closest('input, textarea')) return;
         
         isDragging.current = true;
         startX.current = e.clientX;
@@ -239,29 +210,8 @@ const App: React.FC = () => {
                         </div>
 
                         <div className={`transition-opacity duration-500 ${isActive ? 'opacity-100 delay-200' : 'opacity-0'} flex flex-col gap-2`}>
-                            {isStudioMode && isActive ? (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                    <input 
-                                        type="text"
-                                        value={project.title}
-                                        onChange={(e) => updateProject(project.id, 'title', e.target.value)}
-                                        className="bg-transparent border-b border-current/20 focus:border-red-500 focus:outline-none text-xl md:text-2xl font-bold tracking-tight w-full"
-                                        placeholder="Project Title"
-                                    />
-                                    <input 
-                                        type="text"
-                                        value={project.tech.join(" / ")}
-                                        onChange={(e) => updateProject(project.id, 'tech', e.target.value.split(" / "))}
-                                        className="bg-transparent border-b border-current/20 focus:border-red-500 focus:outline-none text-sm text-gray-500 dark:text-gray-400 w-full"
-                                        placeholder="Tech 1 / Tech 2"
-                                    />
-                                </div>
-                            ) : (
-                                <>
-                                    <h3 className="text-xl md:text-2xl font-bold tracking-tight select-none">{project.title}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 select-none">{project.tech.join(" / ")}</p>
-                                </>
-                            )}
+                            <h3 className="text-xl md:text-2xl font-bold tracking-tight select-none">{project.title}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 select-none">{project.tech.join(" / ")}</p>
                         </div>
                     </div>
                 );
@@ -404,20 +354,9 @@ const App: React.FC = () => {
             <div className="flex-1 w-full px-6 md:px-12 pt-32 pb-32">
                  <div className="max-w-7xl mx-auto">
                     <div className="mb-24">
-                        {isStudioMode ? (
-                            <div className="space-y-4">
-                                <label className="text-xs font-mono uppercase opacity-50 block">Edit Bio</label>
-                                <textarea 
-                                    value={bio}
-                                    onChange={(e) => setBio(e.target.value)}
-                                    className="w-full h-[600px] text-4xl md:text-7xl font-medium tracking-tight leading-[1.1] bg-white/5 border border-current/20 rounded-lg p-6 focus:outline-none focus:ring-2 focus:ring-current/20 resize-none font-sans"
-                                />
-                            </div>
-                        ) : (
-                            <h2 className="text-4xl md:text-7xl font-medium tracking-tight leading-[1.1] mb-8 whitespace-pre-line">
-                                {bio}
-                            </h2>
-                        )}
+                        <h2 className="text-4xl md:text-7xl font-medium tracking-tight leading-[1.1] mb-8 whitespace-pre-line">
+                            {bio}
+                        </h2>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24 text-base pt-12 border-t border-current/10">
@@ -468,14 +407,6 @@ const App: React.FC = () => {
                     >
                         Dezuhan
                     </button>
-                    {isStudioMode && (
-                        <div className="flex items-center gap-2">
-                             <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold tracking-wider animate-pulse">STUDIO MODE</span>
-                             <button onClick={resetContent} className="text-[10px] underline opacity-50 hover:opacity-100 flex items-center gap-1">
-                                <RotateCcw size={10} /> Reset
-                             </button>
-                        </div>
-                    )}
                 </div>
 
                 {/* Desktop Nav */}
@@ -500,13 +431,6 @@ const App: React.FC = () => {
                     </button>
                     
                     <div className="flex items-center gap-6 pl-6 border-l border-current border-opacity-20">
-                        <button 
-                            onClick={() => setIsStudioMode(!isStudioMode)} 
-                            className={`hover:opacity-100 transition-all ${isStudioMode ? 'text-red-500 opacity-100' : 'opacity-40'}`}
-                            title="Toggle Studio Edit Mode"
-                        >
-                            <Pen size={14} />
-                        </button>
                         <button onClick={toggleTheme} className="hover:opacity-70 transition-opacity">
                             {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
                         </button>
@@ -565,13 +489,6 @@ const App: React.FC = () => {
                     <div className="flex justify-between items-end border-t border-current border-opacity-10 pt-6">
                         <div className="flex gap-4">
                             <button 
-                                onClick={() => setIsStudioMode(!isStudioMode)} 
-                                className={`flex items-center gap-2 text-xs font-bold tracking-widest uppercase ${isStudioMode ? 'text-red-500' : ''}`}
-                            >
-                                <Pen size={14} />
-                                Studio
-                            </button>
-                            <button 
                                 onClick={toggleTheme} 
                                 className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase"
                             >
@@ -610,8 +527,6 @@ const App: React.FC = () => {
                 <ProjectDetail 
                     project={projects.find(p => p.id === selectedProjectId)!}
                     onBack={() => setView('work')} // Default back to work logic
-                    isStudioMode={isStudioMode}
-                    onUpdate={updateProject}
                 />
             )}
 

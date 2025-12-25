@@ -5,46 +5,9 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 interface ProjectDetailProps {
     project: Project;
     onBack: () => void;
-    isStudioMode: boolean;
-    onUpdate: (id: number, field: keyof Project, value: any) => void;
 }
 
-export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack, isStudioMode, onUpdate }) => {
-    
-    // Helper for input fields in studio mode
-    const renderEditableText = (
-        field: keyof Project, 
-        value: string | undefined, 
-        className: string, 
-        placeholder: string,
-        multiline: boolean = false
-    ) => {
-        if (!isStudioMode) {
-            return <div className={className}>{value}</div>;
-        }
-
-        if (multiline) {
-            return (
-                <textarea
-                    value={value || ''}
-                    onChange={(e) => onUpdate(project.id, field, e.target.value)}
-                    className={`${className} bg-white/5 border border-dashed border-red-500/50 p-2 rounded focus:outline-none focus:border-red-500 min-h-[150px] resize-y`}
-                    placeholder={placeholder}
-                />
-            );
-        }
-
-        return (
-            <input
-                type="text"
-                value={value || ''}
-                onChange={(e) => onUpdate(project.id, field, e.target.value)}
-                className={`${className} bg-white/5 border-b border-dashed border-red-500/50 focus:outline-none focus:border-red-500`}
-                placeholder={placeholder}
-            />
-        );
-    };
-
+export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack }) => {
     return (
         <div className="fixed inset-0 z-50 bg-background dark:bg-black overflow-y-auto animate-fade-in">
             {/* Top Navigation */}
@@ -62,18 +25,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack, i
                 
                 {/* 1. Header Section */}
                 <div className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                    <div className="flex-1">
-                        {renderEditableText('title', project.title, "text-4xl md:text-6xl font-bold tracking-tight mb-2", "Project Title")}
-                        {renderEditableText('client', project.client, "text-lg opacity-60 font-mono", "Client Name")}
+                    <div className="flex-1 w-full">
+                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-2">{project.title}</h1>
+                        <p className="text-lg opacity-60 font-mono">{project.client}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                         <span className="text-xs font-mono uppercase tracking-widest opacity-40 block mb-1">Year</span>
-                        {renderEditableText('year', project.year, "text-sm font-bold", "2024")}
+                        <p className="text-sm font-bold">{project.year || "2024"}</p>
                     </div>
                 </div>
 
                 {/* 2. Hero Image */}
-                <div className="w-full mb-16 rounded-sm overflow-hidden shadow-sm">
+                <div className="w-full mb-16 rounded-sm overflow-hidden shadow-sm group relative">
                     <img src={project.image} alt={project.title} className="w-full h-auto object-cover" />
                 </div>
 
@@ -82,7 +45,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack, i
                     {/* Description Column */}
                     <div className="md:col-span-8">
                         <h3 className="text-xs font-mono uppercase tracking-widest opacity-40 mb-6">About the project</h3>
-                        {renderEditableText('content', project.content || project.description, "text-lg md:text-xl leading-relaxed opacity-90 whitespace-pre-line font-light", "Long content description...", true)}
+                        <p className="text-lg md:text-xl leading-relaxed opacity-90 whitespace-pre-line font-light">
+                            {project.content || project.description}
+                        </p>
                         
                         {project.link && (
                              <div className="mt-8">
@@ -97,24 +62,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack, i
                     <div className="md:col-span-4 space-y-8">
                         <div>
                             <h3 className="text-xs font-mono uppercase tracking-widest opacity-40 mb-2">Role</h3>
-                            {renderEditableText('role', project.role, "text-sm font-medium", "Role")}
+                            <p className="text-sm font-medium">{project.role}</p>
                         </div>
                         <div>
                             <h3 className="text-xs font-mono uppercase tracking-widest opacity-40 mb-2">Tech Stack</h3>
                              <div className="flex flex-wrap gap-x-2 gap-y-1">
-                                 {isStudioMode ? (
-                                    <input 
-                                        value={project.tech.join(", ")}
-                                        onChange={(e) => onUpdate(project.id, 'tech', e.target.value.split(",").map(s => s.trim()))}
-                                        className="w-full bg-white/5 p-2 text-sm border-dashed border border-red-500/50"
-                                    />
-                                 ) : (
-                                     project.tech.map((t, i) => (
-                                         <span key={i} className="text-sm opacity-80">
-                                             {t}{i < project.tech.length - 1 ? ',' : ''}
-                                         </span>
-                                     ))
-                                 )}
+                                 {project.tech.map((t, i) => (
+                                     <span key={i} className="text-sm opacity-80">
+                                         {t}{i < project.tech.length - 1 ? ',' : ''}
+                                     </span>
+                                 ))}
                              </div>
                         </div>
                     </div>
@@ -124,7 +81,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack, i
                 {project.gallery && project.gallery.length > 0 && (
                     <div className="flex flex-col gap-8 md:gap-16">
                         {project.gallery.map((img, idx) => (
-                            <div key={idx} className="w-full bg-gray-100 dark:bg-gray-800">
+                            <div key={idx} className="w-full bg-gray-100 dark:bg-gray-800 relative group">
                                 <img 
                                     src={img} 
                                     alt={`${project.title} - view ${idx + 1}`} 
