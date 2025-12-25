@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, ArchiveItem } from '../../types';
 import { getGitHubFile, updateGitHubFile, loginAdmin } from '../actions';
-import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical } from 'lucide-react';
+import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 // --- Types ---
@@ -168,7 +168,21 @@ export default function AdminPage() {
         }
     };
 
-    // --- Drag and Drop Logic ---
+    // --- Reorder Logic (Buttons & Drag) ---
+
+    const moveItem = (type: 'projects' | 'archive', index: number, direction: 'up' | 'down') => {
+        const list = type === 'projects' ? [...projects] : [...archive];
+        if (direction === 'up') {
+            if (index === 0) return;
+            [list[index - 1], list[index]] = [list[index], list[index - 1]];
+        } else {
+            if (index === list.length - 1) return;
+            [list[index], list[index + 1]] = [list[index + 1], list[index]];
+        }
+
+        if (type === 'projects') setProjects(list as Project[]);
+        else setArchive(list as ArchiveItem[]);
+    };
 
     const handleDragStart = (e: React.DragEvent, index: number) => {
         dragItem.current = index;
@@ -397,9 +411,29 @@ export default function AdminPage() {
                                     onDragEnd={handleDragEnd}
                                     onDragOver={(e) => e.preventDefault()}
                                 >
-                                    {/* Drag Handle */}
-                                    <div className="w-8 bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center cursor-move transition-colors shrink-0">
-                                        <GripVertical size={16} className="text-neutral-500" />
+                                    {/* Control Column */}
+                                    <div className="w-10 bg-neutral-950 border-r border-neutral-800 flex flex-col items-center shrink-0">
+                                        <button 
+                                            type="button"
+                                            onClick={() => moveItem('projects', index, 'up')}
+                                            disabled={index === 0}
+                                            className="w-full h-8 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                                        >
+                                            <ChevronUp size={14} />
+                                        </button>
+                                        
+                                        <div className="flex-1 w-full flex items-center justify-center cursor-move hover:bg-neutral-800 text-neutral-600 hover:text-neutral-400 transition-colors">
+                                            <GripVertical size={16} />
+                                        </div>
+
+                                        <button 
+                                            type="button"
+                                            onClick={() => moveItem('projects', index, 'down')}
+                                            disabled={index === projects.length - 1}
+                                            className="w-full h-8 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                                        >
+                                            <ChevronDown size={14} />
+                                        </button>
                                     </div>
 
                                     {/* Card Content */}
@@ -538,9 +572,29 @@ export default function AdminPage() {
                                     onDragEnd={handleDragEnd}
                                     onDragOver={(e) => e.preventDefault()}
                                 >
-                                    {/* Drag Handle */}
-                                    <div className="w-8 bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center cursor-move transition-colors shrink-0">
-                                        <GripVertical size={16} className="text-neutral-500" />
+                                    {/* Control Column */}
+                                    <div className="w-10 bg-neutral-950 border-r border-neutral-800 flex flex-col items-center shrink-0">
+                                        <button 
+                                            type="button"
+                                            onClick={() => moveItem('archive', index, 'up')}
+                                            disabled={index === 0}
+                                            className="w-full h-8 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                                        >
+                                            <ChevronUp size={14} />
+                                        </button>
+                                        
+                                        <div className="flex-1 w-full flex items-center justify-center cursor-move hover:bg-neutral-800 text-neutral-600 hover:text-neutral-400 transition-colors">
+                                            <GripVertical size={16} />
+                                        </div>
+
+                                        <button 
+                                            type="button"
+                                            onClick={() => moveItem('archive', index, 'down')}
+                                            disabled={index === archive.length - 1}
+                                            className="w-full h-8 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-neutral-800 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                                        >
+                                            <ChevronDown size={14} />
+                                        </button>
                                     </div>
 
                                     <div className="p-6 flex-1 relative flex flex-col gap-4">
