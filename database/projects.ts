@@ -4,7 +4,7 @@ export const DEFAULT_PROJECTS: Project[] = [
     {
         "id": 1,
         "title": "YAMATO RAMEN",
-        "description": "Exploring the silence within the chaos of metropolitan life.",
+        "description": "Social media design proposal for Yamato Ramen (Jakarta) by @artikarya.studio.",
         "content": "Yamato Ramen, a Japanese food restaurant based in Jakarta. The proposal design that we @artikarya.studio submitted to Yamato Ramen for social media designs. Logo is my personal initiative (Fake Project for Logo).",
         "tech": [
             "Photography",
