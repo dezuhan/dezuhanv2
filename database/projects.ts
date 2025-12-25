@@ -2,6 +2,66 @@ import { Project } from '../types';
 
 export const DEFAULT_PROJECTS: Project[] = [
     {
+        "id": 10,
+        "title": "New Project",
+        "description": "",
+        "content": "",
+        "tech": [],
+        "link": "",
+        "image": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000",
+        "year": "2025",
+        "role": "Designer",
+        "client": "Client Name"
+    },
+    {
+        "id": 9,
+        "title": "New Project",
+        "description": "",
+        "content": "",
+        "tech": [],
+        "link": "",
+        "image": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000",
+        "year": "2025",
+        "role": "Designer",
+        "client": "Client Name"
+    },
+    {
+        "id": 8,
+        "title": "New Project",
+        "description": "",
+        "content": "",
+        "tech": [],
+        "link": "",
+        "image": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000",
+        "year": "2025",
+        "role": "Designer",
+        "client": "Client Name"
+    },
+    {
+        "id": 7,
+        "title": "New Project",
+        "description": "",
+        "content": "",
+        "tech": [],
+        "link": "",
+        "image": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000",
+        "year": "2025",
+        "role": "Designer",
+        "client": "Client Name"
+    },
+    {
+        "id": 6,
+        "title": "New Project",
+        "description": "",
+        "content": "",
+        "tech": [],
+        "link": "",
+        "image": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000",
+        "year": "2025",
+        "role": "Designer",
+        "client": "Client Name"
+    },
+    {
         "id": 1,
         "title": "Coba COmmit",
         "description": "Exploring the silence within the chaos of metropolitan life.",
