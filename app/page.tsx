@@ -29,22 +29,23 @@ const Clock = () => {
 
 // Reusable Footer Component
 const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
-    <footer className={`p-6 md:p-8 flex justify-between items-end text-[10px] md:text-xs font-mono uppercase tracking-widest z-40 ${className}`}>
-        <div>
+    <footer className={`p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end text-[10px] md:text-xs font-mono uppercase tracking-widest z-40 gap-8 md:gap-0 ${className}`}>
+        <div className="order-2 md:order-1">
             <p className="opacity-50">© 2025 Dezuhan</p>
             <p>Dezuhan</p>
         </div>
         
-        <div className="text-right flex items-start gap-8 md:gap-12">
+        <div className="order-1 md:order-2 w-full md:w-auto text-left md:text-right flex flex-col md:flex-row items-start gap-8 md:gap-12">
             <div className="flex flex-col gap-1">
                 <a href="https://instagram.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Instagram</a>
                 <a href="https://linkedin.com/in/dzuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">LinkedIn</a>
                 <a href="https://behance.net/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Behance</a>
                 <a href="https://github.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">GitHub</a>
             </div>
-            <div className="flex flex-col gap-1 text-right">
+            <div className="flex flex-col gap-1 text-left md:text-right">
                 <a href="mailto:dezuhan.contact@gmail.com" className="hover:opacity-100 opacity-50 transition-opacity">dezuhan.contact@gmail.com</a>
                 <p className="opacity-50">(+62) 851 5621 6653</p>
+                <Link href="/admin" className="opacity-10 hover:opacity-100 transition-opacity mt-2">Admin</Link>
             </div>
         </div>
     </footer>
