@@ -39,7 +39,6 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
             <div className="flex flex-col gap-1 text-right">
                 <a href="mailto:dezuhan.contact@gmail.com" className="hover:opacity-100 opacity-50 transition-opacity">dezuhan.contact@gmail.com</a>
                 <p className="opacity-50">(+62) 851 5621 6653</p>
-                <a href="/admin" className="opacity-10 hover:opacity-100 transition-opacity mt-2">Admin</a>
             </div>
         </div>
     </footer>

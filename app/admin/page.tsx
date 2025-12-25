@@ -2,56 +2,135 @@
 
 import React, { useState, useEffect } from 'react';
 import { Project, ArchiveItem } from '../../types';
-import { DEFAULT_PROJECTS } from '../../data';
-import { DEFAULT_ARCHIVE } from '../../database/archive';
-import { DEFAULT_BIO } from '../../database/bio';
-import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, ChevronRight } from 'lucide-react';
+import { getGitHubFile, updateGitHubFile, loginAdmin } from '../actions';
+import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-// Simple "Security"
-const ADMIN_PIN = "0000"; // You can change this or make it dynamic if needed
+// --- Types ---
+type Tab = 'projects' | 'archive' | 'bio';
+
+// --- Parsers & Serializers ---
+const parseProjectFile = (content: string): Project[] => {
+    try {
+        const jsonPart = content.split('export const DEFAULT_PROJECTS')[1];
+        const cleanJson = jsonPart.substring(jsonPart.indexOf('=') + 1).trim().replace(/;\s*$/, '');
+        return new Function('return ' + cleanJson)();
+    } catch (e) {
+        console.error("Error parsing projects file", e);
+        return [];
+    }
+};
+
+const serializeProjectFile = (projects: Project[]) => {
+    return `import { Project } from '../types';
+
+export const DEFAULT_PROJECTS: Project[] = ${JSON.stringify(projects, null, 4)};`;
+};
+
+const parseArchiveFile = (content: string): ArchiveItem[] => {
+    try {
+        const jsonPart = content.split('export const DEFAULT_ARCHIVE')[1];
+        const cleanJson = jsonPart.substring(jsonPart.indexOf('=') + 1).trim().replace(/;\s*$/, '');
+        return new Function('return ' + cleanJson)();
+    } catch (e) {
+        console.error("Error parsing archive file", e);
+        return [];
+    }
+};
+
+const serializeArchiveFile = (archive: ArchiveItem[]) => {
+    return `import { ArchiveItem } from '../types';
+
+export const DEFAULT_ARCHIVE: ArchiveItem[] = ${JSON.stringify(archive, null, 4)};`;
+};
+
+const parseBioFile = (content: string): string => {
+    const match = content.match(/export const DEFAULT_BIO\s*=\s*[`'"]([\s\S]*?)[`'"];/);
+    return match ? match[1] : "";
+};
+
+const serializeBioFile = (bio: string) => {
+    return `export const DEFAULT_BIO = \`${bio}\`;`;
+};
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [pinInput, setPinInput] = useState("");
-    const [activeTab, setActiveTab] = useState<'projects' | 'archive' | 'bio'>('projects');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState<Tab>('projects');
     
     // Data State
     const [projects, setProjects] = useState<Project[]>([]);
     const [archive, setArchive] = useState<ArchiveItem[]>([]);
     const [bio, setBio] = useState<string>("");
 
+    // File SHA Tracking
+    const [shas, setShas] = useState({ projects: '', archive: '', bio: '' });
+
     // Notification State
     const [message, setMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
 
-    // Style constants to replace styled-jsx
-    const labelStyle = "text-[10px] font-mono uppercase text-neutral-500 mb-1 block tracking-wider";
-    const inputStyle = "w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm text-white focus:outline-none focus:border-neutral-500 transition-colors";
-
-    // Initial Load
+    // Initial Auth Check
     useEffect(() => {
-        // Load from LocalStorage or Fallback
-        const storedProjects = localStorage.getItem('dezuhan_projects');
-        const storedArchive = localStorage.getItem('dezuhan_archive');
-        const storedBio = localStorage.getItem('dezuhan_bio');
-
-        setProjects(storedProjects ? JSON.parse(storedProjects) : DEFAULT_PROJECTS);
-        setArchive(storedArchive ? JSON.parse(storedArchive) : DEFAULT_ARCHIVE);
-        setBio(storedBio || DEFAULT_BIO);
-
-        // Check if previously logged in (session storage)
-        if (sessionStorage.getItem('dezuhan_admin_auth') === 'true') {
+        const auth = sessionStorage.getItem('dezuhan_admin_auth');
+        if (auth === 'true') {
             setIsAuthenticated(true);
+            loadData();
         }
     }, []);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
+        setMessage({ text, type });
+        setTimeout(() => setMessage(null), 5000);
+    };
+
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            // Load Projects
+            const projFile = await getGitHubFile('database/projects.ts');
+            setProjects(parseProjectFile(projFile.content));
+            
+            // Load Archive
+            const archFile = await getGitHubFile('database/archive.ts');
+            setArchive(parseArchiveFile(archFile.content));
+
+            // Load Bio
+            const bioFile = await getGitHubFile('database/bio.ts');
+            setBio(parseBioFile(bioFile.content));
+
+            // Store SHAs
+            setShas({
+                projects: projFile.sha,
+                archive: archFile.sha,
+                bio: bioFile.sha
+            });
+
+        } catch (error: any) {
+            console.error(error);
+            showMessage(error.message || "Failed to load data.", 'error');
+            // If fetching fails due to missing env, we might want to logout or show config error
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (pinInput === ADMIN_PIN) {
-            setIsAuthenticated(true);
-            sessionStorage.setItem('dezuhan_admin_auth', 'true');
-        } else {
-            alert("Incorrect PIN");
+        const formData = new FormData(e.target as HTMLFormElement);
+        const password = formData.get('password') as string;
+
+        try {
+            const valid = await loginAdmin(password);
+            if (valid) {
+                setIsAuthenticated(true);
+                sessionStorage.setItem('dezuhan_admin_auth', 'true');
+                loadData();
+            } else {
+                alert("Incorrect Password");
+            }
+        } catch (e) {
+            alert("Error: .env is probably not configured on server.");
         }
     };
 
@@ -60,35 +139,32 @@ export default function AdminPage() {
         sessionStorage.removeItem('dezuhan_admin_auth');
     };
 
-    const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
-        setMessage({ text, type });
-        setTimeout(() => setMessage(null), 3000);
-    };
-
-    const saveData = () => {
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
-            localStorage.setItem('dezuhan_projects', JSON.stringify(projects));
-            localStorage.setItem('dezuhan_archive', JSON.stringify(archive));
-            localStorage.setItem('dezuhan_bio', bio);
-            showMessage("All changes saved successfully to LocalStorage!");
-        } catch (err) {
-            showMessage("Failed to save changes", 'error');
+            if (activeTab === 'projects') {
+                const content = serializeProjectFile(projects);
+                await updateGitHubFile('database/projects.ts', content, shas.projects, 'Update projects via Admin CMS');
+            } else if (activeTab === 'archive') {
+                const content = serializeArchiveFile(archive);
+                await updateGitHubFile('database/archive.ts', content, shas.archive, 'Update archive via Admin CMS');
+            } else if (activeTab === 'bio') {
+                const content = serializeBioFile(bio);
+                await updateGitHubFile('database/bio.ts', content, shas.bio, 'Update bio via Admin CMS');
+            }
+
+            showMessage("Changes committed to GitHub! Deployment should start shortly.");
+            await loadData(); // Refresh SHAs
+
+        } catch (error: any) {
+            console.error(error);
+            showMessage(`Save Failed: ${error.message}`, 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const resetToDefaults = () => {
-        if(confirm("Are you sure? This will wipe all local changes and restore defaults.")) {
-            setProjects(DEFAULT_PROJECTS);
-            setArchive(DEFAULT_ARCHIVE);
-            setBio(DEFAULT_BIO);
-            localStorage.removeItem('dezuhan_projects');
-            localStorage.removeItem('dezuhan_archive');
-            localStorage.removeItem('dezuhan_bio');
-            showMessage("Restored to defaults");
-        }
-    };
-
-    // --- CRUD Handlers ---
+    // --- CRUD Logic ---
 
     // Projects
     const addProject = () => {
@@ -145,34 +221,43 @@ export default function AdminPage() {
         }
     };
 
+    // Style constants
+    const labelStyle = "text-[10px] font-mono uppercase text-neutral-500 mb-1 block tracking-wider";
+    const inputStyle = "w-full bg-neutral-950 border border-neutral-800 rounded p-3 text-sm text-white focus:outline-none focus:border-neutral-500 transition-colors";
 
-    // --- Render Logic ---
+    // --- Renders ---
 
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center p-4">
                 <form onSubmit={handleLogin} className="w-full max-w-md bg-neutral-800 p-8 rounded-xl border border-neutral-700 shadow-2xl">
-                    <h1 className="text-2xl font-bold mb-6 text-center tracking-tight">Dezuhan Admin</h1>
+                    <div className="flex justify-center mb-6">
+                        <Lock size={48} className="text-white/20" />
+                    </div>
+                    <h1 className="text-2xl font-bold mb-2 text-center tracking-tight">Admin Access</h1>
+                    <p className="text-neutral-500 text-center text-sm mb-8">Enter password to manage content.</p>
+                    
                     <div className="space-y-4">
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-mono uppercase text-neutral-400">Security PIN</label>
-                            <input 
-                                type="password" 
-                                value={pinInput}
-                                onChange={e => setPinInput(e.target.value)}
-                                className="bg-neutral-900 border border-neutral-700 rounded p-3 text-center text-2xl tracking-widest focus:border-white focus:outline-none transition-colors"
-                                placeholder="••••"
-                                autoFocus
-                            />
+                        <div>
+                            <input name="password" type="password" required className={inputStyle} placeholder="••••••••" autoFocus />
                         </div>
-                        <button type="submit" className="w-full bg-white text-black font-bold py-3 rounded hover:bg-neutral-200 transition-colors">
-                            Enter Dashboard
+                        <button type="submit" className="w-full bg-white text-black font-bold py-3 rounded hover:bg-neutral-200 transition-colors mt-2">
+                            Login
                         </button>
                         <Link href="/" className="block text-center text-xs text-neutral-500 hover:text-white mt-4">
                             ← Back to Main Site
                         </Link>
                     </div>
                 </form>
+            </div>
+        );
+    }
+
+    if (isLoading) {
+         return (
+            <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center gap-4">
+                <Loader2 className="animate-spin" size={32} />
+                <p className="text-sm font-mono opacity-50">Syncing with Repository...</p>
             </div>
         );
     }
@@ -184,7 +269,10 @@ export default function AdminPage() {
             <aside className="w-full md:w-64 bg-neutral-900 border-r border-neutral-800 p-6 flex flex-col gap-8 shrink-0">
                 <div>
                     <h1 className="text-xl font-bold tracking-tight text-white mb-1">Dezuhan CMS</h1>
-                    <p className="text-xs text-neutral-500 font-mono">Local Storage Mode</p>
+                    <div className="flex items-center gap-2 text-xs text-green-500 font-mono">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        Online Mode
+                    </div>
                 </div>
 
                 <nav className="flex flex-col gap-2 flex-1">
@@ -224,14 +312,13 @@ export default function AdminPage() {
                 <header className="sticky top-0 z-20 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 p-4 md:p-6 flex justify-between items-center">
                     <h2 className="text-xl font-bold capitalize">{activeTab} Manager</h2>
                     <div className="flex gap-4">
-                        <button onClick={resetToDefaults} className="text-xs text-neutral-500 hover:text-red-400 px-4 py-2">
-                            Reset All Data
-                        </button>
                         <button 
-                            onClick={saveData}
-                            className="bg-green-500 hover:bg-green-600 text-black font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-green-900/20"
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
                         >
-                            <Save size={18} /> Save Changes
+                            {isSaving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18} />}
+                            {isSaving ? 'Committing...' : 'Commit Changes'}
                         </button>
                     </div>
                 </header>
