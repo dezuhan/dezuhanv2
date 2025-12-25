@@ -25,6 +25,18 @@ export interface ArchiveItem {
     skills?: string;     // e.g. "Adobe Illustrator, Photoshop"
 }
 
+export interface SocialLink {
+    platform: string;
+    url: string;
+}
+
+export interface ProfileData {
+    bio: string;
+    email: string;
+    phone: string;
+    socials: SocialLink[];
+}
+
 export enum Section {
     HOME = 'home',
     WORK = 'work',

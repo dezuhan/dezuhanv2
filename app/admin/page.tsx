@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Project, ArchiveItem } from '../../types';
+import { Project, ArchiveItem, ProfileData, SocialLink } from '../../types';
 import { getGitHubFile, updateGitHubFile, loginAdmin } from '../actions';
-import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical, ChevronUp, ChevronDown, Link as LinkIcon, Mail, Phone, User } from 'lucide-react';
 import Link from 'next/link';
 
 // --- Types ---
-type Tab = 'projects' | 'archive' | 'bio';
+type Tab = 'projects' | 'archive' | 'profile';
 
 // --- Parsers & Serializers ---
 const parseProjectFile = (content: string): Project[] => {
@@ -44,13 +44,23 @@ const serializeArchiveFile = (archive: ArchiveItem[]) => {
 export const DEFAULT_ARCHIVE: ArchiveItem[] = ${JSON.stringify(archive, null, 4)};`;
 };
 
-const parseBioFile = (content: string): string => {
-    const match = content.match(/export const DEFAULT_BIO\s*=\s*[`'"]([\s\S]*?)[`'"];/);
-    return match ? match[1] : "";
+const parseProfileFile = (content: string): ProfileData => {
+    try {
+        const jsonPart = content.split('export const PROFILE_DATA')[1];
+        const cleanJson = jsonPart.substring(jsonPart.indexOf('=') + 1).trim().replace(/;\s*$/, '');
+        // We need to type cast because Function constructor returns any
+        return new Function('return ' + cleanJson)(); 
+    } catch (e) {
+        console.error("Error parsing profile file", e);
+        // Return default fallback
+        return { bio: "", email: "", phone: "", socials: [] };
+    }
 };
 
-const serializeBioFile = (bio: string) => {
-    return `export const DEFAULT_BIO = \`${bio}\`;`;
+const serializeProfileFile = (profile: ProfileData) => {
+    return `import { ProfileData } from '../types';
+
+export const PROFILE_DATA: ProfileData = ${JSON.stringify(profile, null, 4)};`;
 };
 
 export default function AdminPage() {
@@ -62,7 +72,7 @@ export default function AdminPage() {
     // Data State
     const [projects, setProjects] = useState<Project[]>([]);
     const [archive, setArchive] = useState<ArchiveItem[]>([]);
-    const [bio, setBio] = useState<string>("");
+    const [profile, setProfile] = useState<ProfileData>({ bio: "", email: "", phone: "", socials: [] });
 
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
@@ -99,9 +109,9 @@ export default function AdminPage() {
             const archFile = await getGitHubFile('database/archive.ts');
             setArchive(parseArchiveFile(archFile.content));
 
-            // Load Bio
+            // Load Profile (Bio)
             const bioFile = await getGitHubFile('database/bio.ts');
-            setBio(parseBioFile(bioFile.content));
+            setProfile(parseProfileFile(bioFile.content));
 
             // Store SHAs
             setShas({
@@ -152,9 +162,9 @@ export default function AdminPage() {
             } else if (activeTab === 'archive') {
                 const content = serializeArchiveFile(archive);
                 await updateGitHubFile('database/archive.ts', content, shas.archive, 'Update archive via Admin CMS');
-            } else if (activeTab === 'bio') {
-                const content = serializeBioFile(bio);
-                await updateGitHubFile('database/bio.ts', content, shas.bio, 'Update bio via Admin CMS');
+            } else if (activeTab === 'profile') {
+                const content = serializeProfileFile(profile);
+                await updateGitHubFile('database/bio.ts', content, shas.bio, 'Update profile via Admin CMS');
             }
 
             showMessage("Changes committed to GitHub! Deployment should start shortly.");
@@ -170,7 +180,20 @@ export default function AdminPage() {
 
     // --- Reorder Logic (Buttons & Drag) ---
 
-    const moveItem = (type: 'projects' | 'archive', index: number, direction: 'up' | 'down') => {
+    const moveItem = (type: 'projects' | 'archive' | 'socials', index: number, direction: 'up' | 'down') => {
+        if (type === 'socials') {
+            const list = [...profile.socials];
+            if (direction === 'up') {
+                if (index === 0) return;
+                [list[index - 1], list[index]] = [list[index], list[index - 1]];
+            } else {
+                if (index === list.length - 1) return;
+                [list[index], list[index + 1]] = [list[index + 1], list[index]];
+            }
+            setProfile(prev => ({...prev, socials: list}));
+            return;
+        }
+
         const list = type === 'projects' ? [...projects] : [...archive];
         if (direction === 'up') {
             if (index === 0) return;
@@ -188,33 +211,24 @@ export default function AdminPage() {
         dragItem.current = index;
         // visual effect only
         e.dataTransfer.effectAllowed = "move";
-        // Ghost image usually handles itself, but we can style the row being dragged via state if needed
-        // For now, we rely on the `dragging` class or style
     };
 
     const handleDragEnter = (e: React.DragEvent, index: number, type: 'projects' | 'archive') => {
-        // Prevent sorting if we aren't dragging anything or dragging over the same item
         if (dragItem.current === null || dragItem.current === index) return;
 
         if (type === 'projects') {
             const newProjects = [...projects];
             const draggedItemContent = newProjects[dragItem.current];
-            
-            // Remove from old pos
             newProjects.splice(dragItem.current, 1);
-            // Insert at new pos
             newProjects.splice(index, 0, draggedItemContent);
-            
             setProjects(newProjects);
-            dragItem.current = index; // Update the reference to the new position
+            dragItem.current = index;
         } 
         else if (type === 'archive') {
             const newArchive = [...archive];
             const draggedItemContent = newArchive[dragItem.current];
-            
             newArchive.splice(dragItem.current, 1);
             newArchive.splice(index, 0, draggedItemContent);
-            
             setArchive(newArchive);
             dragItem.current = index;
         }
@@ -280,6 +294,29 @@ export default function AdminPage() {
         if(confirm("Delete this archive entry?")) {
             setArchive(prev => prev.filter(a => a.id !== id));
         }
+    };
+
+    // Profile / Bio
+    const updateProfile = (field: keyof ProfileData, value: any) => {
+        setProfile(prev => ({ ...prev, [field]: value }));
+    };
+
+    const addSocial = () => {
+        setProfile(prev => ({
+            ...prev,
+            socials: [...prev.socials, { platform: "New Platform", url: "https://" }]
+        }));
+    };
+
+    const updateSocial = (index: number, field: keyof SocialLink, value: string) => {
+        const newSocials = [...profile.socials];
+        newSocials[index] = { ...newSocials[index], [field]: value };
+        setProfile(prev => ({ ...prev, socials: newSocials }));
+    };
+
+    const deleteSocial = (index: number) => {
+        const newSocials = profile.socials.filter((_, i) => i !== index);
+        setProfile(prev => ({ ...prev, socials: newSocials }));
     };
 
     // Style constants
@@ -350,10 +387,10 @@ export default function AdminPage() {
                         <Archive size={18} /> Archive
                     </button>
                     <button 
-                        onClick={() => setActiveTab('bio')}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === 'bio' ? 'bg-white text-black font-medium' : 'hover:bg-neutral-800 text-neutral-400'}`}
+                        onClick={() => setActiveTab('profile')}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === 'profile' ? 'bg-white text-black font-medium' : 'hover:bg-neutral-800 text-neutral-400'}`}
                     >
-                        <FileText size={18} /> Bio
+                        <User size={18} /> Profile
                     </button>
                 </nav>
 
@@ -681,15 +718,103 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {/* --- BIO EDITOR --- */}
-                    {activeTab === 'bio' && (
-                        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-                            <label className={`${labelStyle} mb-4 block`}>Bio Text</label>
-                            <textarea 
-                                value={bio}
-                                onChange={e => setBio(e.target.value)}
-                                className="w-full h-[400px] bg-neutral-950 border border-neutral-800 rounded-lg p-6 text-xl leading-relaxed text-neutral-200 focus:outline-none focus:border-white transition-colors"
-                            />
+                    {/* --- PROFILE / BIO EDITOR --- */}
+                    {activeTab === 'profile' && (
+                        <div className="space-y-6">
+                            {/* Contact Info Card */}
+                            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <FileText size={18} /> Contact Information
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <label className={labelStyle}>Email Address</label>
+                                        <div className="relative">
+                                            <Mail size={14} className="absolute left-3 top-3.5 text-neutral-500" />
+                                            <input 
+                                                value={profile.email}
+                                                onChange={e => updateProfile('email', e.target.value)}
+                                                className={`${inputStyle} pl-9`} 
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className={labelStyle}>Phone Number</label>
+                                        <div className="relative">
+                                            <Phone size={14} className="absolute left-3 top-3.5 text-neutral-500" />
+                                            <input 
+                                                value={profile.phone}
+                                                onChange={e => updateProfile('phone', e.target.value)}
+                                                className={`${inputStyle} pl-9`} 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className={`${labelStyle} mb-2 block`}>Bio Text</label>
+                                    <textarea 
+                                        value={profile.bio}
+                                        onChange={e => updateProfile('bio', e.target.value)}
+                                        className="w-full h-[200px] bg-neutral-950 border border-neutral-800 rounded-lg p-6 text-lg leading-relaxed text-neutral-200 focus:outline-none focus:border-white transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Social Media Card */}
+                            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-lg font-bold flex items-center gap-2">
+                                        <LinkIcon size={18} /> Social Media
+                                    </h3>
+                                    <button 
+                                        onClick={addSocial}
+                                        className="text-xs bg-white text-black font-bold px-3 py-1.5 rounded hover:bg-neutral-200 flex items-center gap-1"
+                                    >
+                                        <Plus size={12} /> Add Link
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {profile.socials.map((social, idx) => (
+                                        <div key={idx} className="flex gap-3 items-center">
+                                            {/* Reorder Buttons */}
+                                            <div className="flex flex-col gap-0.5">
+                                                <button onClick={() => moveItem('socials', idx, 'up')} disabled={idx === 0} className="text-neutral-600 hover:text-white disabled:opacity-20"><ChevronUp size={12}/></button>
+                                                <button onClick={() => moveItem('socials', idx, 'down')} disabled={idx === profile.socials.length - 1} className="text-neutral-600 hover:text-white disabled:opacity-20"><ChevronDown size={12}/></button>
+                                            </div>
+
+                                            <div className="flex-1 grid grid-cols-12 gap-3">
+                                                <div className="col-span-4">
+                                                    <input 
+                                                        value={social.platform}
+                                                        onChange={e => updateSocial(idx, 'platform', e.target.value)}
+                                                        className={inputStyle} 
+                                                        placeholder="Platform Name (e.g. Instagram)"
+                                                    />
+                                                </div>
+                                                <div className="col-span-8">
+                                                    <input 
+                                                        value={social.url}
+                                                        onChange={e => updateSocial(idx, 'url', e.target.value)}
+                                                        className={inputStyle} 
+                                                        placeholder="https://..."
+                                                    />
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => deleteSocial(idx)}
+                                                className="p-2 text-neutral-600 hover:text-red-500 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {profile.socials.length === 0 && (
+                                        <p className="text-neutral-600 text-sm font-mono text-center py-4">No social links added yet.</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 

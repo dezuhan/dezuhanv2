@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Project, ArchiveItem } from '../types';
-import { DEFAULT_PROJECTS, DEFAULT_ARCHIVE, DEFAULT_BIO } from '../database';
+import { DEFAULT_PROJECTS, DEFAULT_ARCHIVE, PROFILE_DATA } from '../database';
 import { ProjectDetail } from '../components/ProjectDetail';
 import { Moon, Sun, X, Menu, Check } from 'lucide-react';
 
@@ -38,14 +38,21 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
         {/* Right Side: Links & Contact */}
         <div className="order-1 md:order-2 w-full md:w-auto flex flex-row md:flex-row items-start gap-8 md:gap-12 text-left">
             <div className="flex flex-col gap-1">
-                <a href="https://instagram.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Instagram</a>
-                <a href="https://linkedin.com/in/dzuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">LinkedIn</a>
-                <a href="https://behance.net/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Behance</a>
-                <a href="https://github.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">GitHub</a>
+                {PROFILE_DATA.socials.map((social, idx) => (
+                    <a 
+                        key={idx}
+                        href={social.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="hover:opacity-100 opacity-50 transition-opacity"
+                    >
+                        {social.platform}
+                    </a>
+                ))}
             </div>
             <div className="flex flex-col gap-1">
-                <a href="mailto:dezuhan.contact@gmail.com" className="hover:opacity-100 opacity-50 transition-opacity">dezuhan.contact@gmail.com</a>
-                <p className="opacity-50">(+62) 851 5621 6653</p>
+                <a href={`mailto:${PROFILE_DATA.email}`} className="hover:opacity-100 opacity-50 transition-opacity">{PROFILE_DATA.email}</a>
+                <p className="opacity-50">{PROFILE_DATA.phone}</p>
             </div>
         </div>
     </footer>
@@ -66,7 +73,7 @@ export default function Home() {
     // Content State - Directly from database files
     const [projects] = useState<Project[]>(DEFAULT_PROJECTS);
     const [archive] = useState<ArchiveItem[]>(DEFAULT_ARCHIVE);
-    const [bio] = useState<string>(DEFAULT_BIO);
+    const [profile] = useState(PROFILE_DATA);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const lastScrollTime = useRef(0);
@@ -385,7 +392,7 @@ export default function Home() {
                  <div className="max-w-7xl mx-auto">
                     <div className="mb-24">
                         <h2 className="text-4xl md:text-7xl font-medium tracking-tight leading-[1.1] mb-8 whitespace-pre-line">
-                            {bio}
+                            {profile.bio}
                         </h2>
                     </div>
 
@@ -393,8 +400,8 @@ export default function Home() {
                         <div>
                             <h3 className="font-mono uppercase tracking-widest opacity-40 mb-6 text-sm">Contact</h3>
                             <ul className="space-y-4 opacity-80 text-lg">
-                                <li><a href="mailto:dezuhan.contact@gmail.com" className="hover:underline">dezuhan.contact@gmail.com</a></li>
-                                <li>(+62) 851 5621 6653</li>
+                                <li><a href={`mailto:${profile.email}`} className="hover:underline">{profile.email}</a></li>
+                                <li>{profile.phone}</li>
                                 <li>@dezuhan</li>
                             </ul>
                         </div>

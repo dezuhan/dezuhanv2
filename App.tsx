@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, ArchiveItem } from './types';
-import { DEFAULT_PROJECTS, DEFAULT_BIO, DEFAULT_ARCHIVE } from './database';
+import { DEFAULT_PROJECTS, PROFILE_DATA, DEFAULT_ARCHIVE } from './database';
 import { ProjectDetail } from './components/ProjectDetail';
 import { Moon, Sun, X, Menu, Check, Circle } from 'lucide-react';
 
@@ -31,14 +31,21 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
         
         <div className="text-right flex items-start gap-8 md:gap-12">
             <div className="flex flex-col gap-1">
-                <a href="https://instagram.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Instagram</a>
-                <a href="https://linkedin.com/in/dzuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">LinkedIn</a>
-                <a href="https://behance.net/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Behance</a>
-                <a href="https://github.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">GitHub</a>
+                {PROFILE_DATA.socials.map((social, idx) => (
+                    <a 
+                        key={idx}
+                        href={social.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="hover:opacity-100 opacity-50 transition-opacity"
+                    >
+                        {social.platform}
+                    </a>
+                ))}
             </div>
             <div className="flex flex-col gap-1 text-right">
-                <a href="mailto:dezuhan.contact@gmail.com" className="hover:opacity-100 opacity-50 transition-opacity">dezuhan.contact@gmail.com</a>
-                <p className="opacity-50">(+62) 851 5621 6653</p>
+                <a href={`mailto:${PROFILE_DATA.email}`} className="hover:opacity-100 opacity-50 transition-opacity">{PROFILE_DATA.email}</a>
+                <p className="opacity-50">{PROFILE_DATA.phone}</p>
             </div>
         </div>
     </footer>
@@ -58,7 +65,7 @@ const App: React.FC = () => {
 
     // Content State
     const projects: Project[] = DEFAULT_PROJECTS;
-    const bio: string = DEFAULT_BIO;
+    const profile = PROFILE_DATA;
     const archive = DEFAULT_ARCHIVE;
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -391,7 +398,7 @@ const App: React.FC = () => {
                  <div className="max-w-7xl mx-auto">
                     <div className="mb-24">
                         <h2 className="text-4xl md:text-7xl font-medium tracking-tight leading-[1.1] mb-8 whitespace-pre-line">
-                            {bio}
+                            {profile.bio}
                         </h2>
                     </div>
 
@@ -399,8 +406,8 @@ const App: React.FC = () => {
                         <div>
                             <h3 className="font-mono uppercase tracking-widest opacity-40 mb-6 text-sm">Contact</h3>
                             <ul className="space-y-4 opacity-80 text-lg">
-                                <li><a href="mailto:dezuhan.contact@gmail.com" className="hover:underline">dezuhan.contact@gmail.com</a></li>
-                                <li>(+62) 851 5621 6653</li>
+                                <li><a href={`mailto:${profile.email}`} className="hover:underline">{profile.email}</a></li>
+                                <li>{profile.phone}</li>
                                 <li>@dezuhan</li>
                             </ul>
                         </div>
