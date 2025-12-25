@@ -32,7 +32,7 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
     <footer className={`p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end text-[10px] md:text-xs font-mono uppercase tracking-widest z-40 gap-8 md:gap-0 ${className}`}>
         <div className="order-2 md:order-1">
             <p className="opacity-50">© 2025 Dezuhan</p>
-            <p>Dezuhan</p>
+            <p>Creative Designer</p>
         </div>
         
         {/* Right Side: Links & Contact */}
@@ -74,6 +74,7 @@ export default function Home() {
     // Drag state
     const isDragging = useRef(false);
     const startX = useRef(0);
+    const startY = useRef(0);
     const [cursorStyle, setCursorStyle] = useState('cursor-default');
 
     // Initialize Theme
@@ -169,19 +170,29 @@ export default function Home() {
         if (view !== 'home') return;
         isDragging.current = true;
         startX.current = e.touches[0].clientX;
+        startY.current = e.touches[0].clientY;
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
         if (!isDragging.current || view !== 'home') return;
         
         const currentX = e.touches[0].clientX;
-        const diff = startX.current - currentX;
+        const currentY = e.touches[0].clientY;
+
+        const diffX = startX.current - currentX;
+        const diffY = startY.current - currentY;
+        
+        // If the swipe is primarily vertical, we ignore it for the carousel
+        // This allows the browser's default behavior (refresh/scroll) to take precedence if allowed by CSS
+        if (Math.abs(diffY) > Math.abs(diffX)) return;
+
         const dragThreshold = 50; // Lower threshold for mobile
 
-        if (Math.abs(diff) > dragThreshold) {
-             const direction = diff > 0 ? 1 : -1;
+        if (Math.abs(diffX) > dragThreshold) {
+             const direction = diffX > 0 ? 1 : -1;
              setActiveIndex(prev => prev + direction);
              startX.current = currentX; 
+             startY.current = currentY;
         }
     };
 
@@ -520,7 +531,7 @@ export default function Home() {
             {/* Main Content Area */}
             <main 
                 className={`flex-1 flex items-center justify-center relative w-full perspective-container ${cursorStyle} 
-                ${view === 'home' ? 'h-screen overflow-hidden fixed inset-0 touch-none' : 'min-h-screen overflow-y-auto relative'}`}
+                ${view === 'home' ? 'h-screen overflow-hidden fixed inset-0 touch-pan-y' : 'min-h-screen overflow-y-auto relative'}`}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
