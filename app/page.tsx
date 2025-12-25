@@ -35,17 +35,17 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
             <p>Dezuhan</p>
         </div>
         
-        <div className="order-1 md:order-2 w-full md:w-auto text-left md:text-right flex flex-col md:flex-row items-start gap-8 md:gap-12">
+        {/* Right Side: Links & Contact */}
+        <div className="order-1 md:order-2 w-full md:w-auto flex flex-col md:flex-row items-start gap-8 md:gap-12 text-left">
             <div className="flex flex-col gap-1">
                 <a href="https://instagram.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Instagram</a>
                 <a href="https://linkedin.com/in/dzuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">LinkedIn</a>
                 <a href="https://behance.net/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">Behance</a>
                 <a href="https://github.com/dezuhan" target="_blank" rel="noopener noreferrer" className="hover:opacity-100 opacity-50 transition-opacity">GitHub</a>
             </div>
-            <div className="flex flex-col gap-1 text-left md:text-right">
+            <div className="flex flex-col gap-1">
                 <a href="mailto:dezuhan.contact@gmail.com" className="hover:opacity-100 opacity-50 transition-opacity">dezuhan.contact@gmail.com</a>
                 <p className="opacity-50">(+62) 851 5621 6653</p>
-                <Link href="/admin" className="opacity-10 hover:opacity-100 transition-opacity mt-2">Admin</Link>
             </div>
         </div>
     </footer>
