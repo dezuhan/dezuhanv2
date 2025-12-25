@@ -1,5 +1,7 @@
 "use server";
 
+import { Buffer } from "buffer";
+
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const OWNER = process.env.GITHUB_OWNER;
 const REPO = process.env.GITHUB_REPO;

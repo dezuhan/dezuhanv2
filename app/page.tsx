@@ -123,7 +123,7 @@ export default function Home() {
          return () => window.removeEventListener('keydown', handleKey);
     }, [view]);
 
-    // Handle Drag/Swipe (Only on Home)
+    // Handle Drag/Swipe (Mouse)
     const handleMouseDown = (e: React.MouseEvent) => {
         if (view !== 'home') return;
         
@@ -162,6 +162,32 @@ export default function Home() {
         isDragging.current = false;
         if(view === 'home') setCursorStyle('cursor-grab');
     };
+
+    // Handle Swipe (Touch) - New Addition
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (view !== 'home') return;
+        isDragging.current = true;
+        startX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging.current || view !== 'home') return;
+        
+        const currentX = e.touches[0].clientX;
+        const diff = startX.current - currentX;
+        const dragThreshold = 50; // Lower threshold for mobile
+
+        if (Math.abs(diff) > dragThreshold) {
+             const direction = diff > 0 ? 1 : -1;
+             setActiveIndex(prev => prev + direction);
+             startX.current = currentX; 
+        }
+    };
+
+    const handleTouchEnd = () => {
+        isDragging.current = false;
+    };
+
 
     // --- Carousel Render Logic ---
     const len = projects.length;
@@ -493,11 +519,14 @@ export default function Home() {
             {/* Main Content Area */}
             <main 
                 className={`flex-1 flex items-center justify-center relative w-full perspective-container ${cursorStyle} 
-                ${view === 'home' ? 'h-screen overflow-hidden fixed inset-0' : 'min-h-screen overflow-y-auto relative'}`}
+                ${view === 'home' ? 'h-screen overflow-hidden fixed inset-0 touch-none' : 'min-h-screen overflow-y-auto relative'}`}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
             >
                 {view === 'home' && renderCarousel()}
                 {view === 'work' && renderGrid()}
