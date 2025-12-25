@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 244, 244, 245;
+  --background-end-rgb: 244, 244, 245;
+}
+
+body {
+  background-color: #f4f4f5;
+  color: #18181b;
+  /* Font family is handled by Next.js font variable class injection */
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+.dark body {
+  background-color: #09090b;
+  color: #e4e4e7;
+}
+
+/* 3D Scene Styles */
+.scene {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}

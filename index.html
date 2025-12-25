@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dezuhan | Digital Archive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#f4f4f5', // Light gray similar to screenshot
+                        surface: '#ffffff',
+                        text: '#18181b',
+                        primary: '#000000',
+                        
+                        // Dark mode overrides
+                        dark_background: '#09090b',
+                        dark_surface: '#18181b',
+                        dark_text: '#e4e4e7',
+                        dark_primary: '#ffffff',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f4f5;
+            color: #18181b;
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+        
+        .dark body {
+            background-color: #09090b;
+            color: #e4e4e7;
+        }
+
+        /* 3D Scene Styles */
+        .scene {
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+        
+        /* Hide scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "tailwindcss": "https://esm.sh/tailwindcss@^4.1.18",
+    "next": "https://esm.sh/next@^16.1.1",
+    "next/": "https://esm.sh/next@^16.1.1/"
+  }
+}
+
+</script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
