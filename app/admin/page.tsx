@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, ArchiveItem, ProfileData, SocialLink } from '../../types';
-import { getGitHubFile, updateGitHubFile, loginAdmin, uploadImage, getMediaFiles, deleteImage } from '../actions';
-import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical, ChevronUp, ChevronDown, Link as LinkIcon, Mail, Phone, User, Upload, Image as ImageIcon, Copy, X } from 'lucide-react';
+import { getGitHubFile, updateGitHubFile, loginAdmin, uploadImage } from '../actions';
+import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical, ChevronUp, ChevronDown, Link as LinkIcon, Mail, Phone, User, Upload, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 
 // --- Types ---
-type Tab = 'projects' | 'archive' | 'profile' | 'media';
+type Tab = 'projects' | 'archive' | 'profile';
 
 // --- Parsers & Serializers ---
 const parseProjectFile = (content: string): Project[] => {
@@ -73,10 +73,6 @@ export default function AdminPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [archive, setArchive] = useState<ArchiveItem[]>([]);
     const [profile, setProfile] = useState<ProfileData>({ bio: "", email: "", phone: "", socials: [] });
-    
-    // Media State
-    const [mediaFiles, setMediaFiles] = useState<{name: string, url: string, path: string}[]>([]);
-    const [isMediaLoading, setIsMediaLoading] = useState(false);
 
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
@@ -85,7 +81,7 @@ export default function AdminPage() {
     // Upload State
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [uploadCallback, setUploadCallback] = useState<((urls: string[]) => void) | null>(null);
+    const [uploadCallback, setUploadCallback] = useState<((url: string) => void) | null>(null);
 
     // File SHA Tracking
     const [shas, setShas] = useState({ projects: '', archive: '', bio: '' });
@@ -101,13 +97,6 @@ export default function AdminPage() {
             loadData();
         }
     }, []);
-
-    // Load media when tab changes to media
-    useEffect(() => {
-        if (isAuthenticated && activeTab === 'media') {
-            refreshMedia();
-        }
-    }, [activeTab, isAuthenticated]);
 
     const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
         setMessage({ text, type });
@@ -139,21 +128,9 @@ export default function AdminPage() {
         } catch (error: any) {
             console.error(error);
             showMessage(error.message || "Failed to load data.", 'error');
+            // If fetching fails due to missing env, we might want to logout or show config error
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const refreshMedia = async () => {
-        setIsMediaLoading(true);
-        try {
-            const files = await getMediaFiles();
-            setMediaFiles(files);
-        } catch (error) {
-            console.error(error);
-            showMessage("Failed to load media library", "error");
-        } finally {
-            setIsMediaLoading(false);
         }
     };
 
@@ -208,81 +185,33 @@ export default function AdminPage() {
 
     // --- Upload Logic ---
 
-    const triggerUpload = (callback?: (urls: string[]) => void) => {
-        setUploadCallback(() => callback || null);
+    const triggerUpload = (callback: (url: string) => void) => {
+        setUploadCallback(() => callback);
         fileInputRef.current?.click();
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
+        const file = e.target.files?.[0];
+        if (!file || !uploadCallback) return;
 
         setIsUploading(true);
-        const uploadedUrls: string[] = [];
-        let errors = 0;
-
         try {
-            // Upload files in parallel
-            const uploadPromises = Array.from(files).map(async (file) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                try {
-                    const result = await uploadImage(formData);
-                    if (result.success && result.url) {
-                        return result.url;
-                    }
-                } catch (err) {
-                    console.error("Upload Error for file " + file.name, err);
-                    errors++;
-                }
-                return null;
-            });
-
-            const results = await Promise.all(uploadPromises);
-            results.forEach(url => {
-                if (url) uploadedUrls.push(url);
-            });
-
-            if (uploadedUrls.length > 0) {
-                showMessage(`Uploaded ${uploadedUrls.length} image(s)${errors > 0 ? `, ${errors} failed` : ''}.`);
-                
-                // If there's a specific callback (e.g., adding to project gallery)
-                if (uploadCallback) {
-                    uploadCallback(uploadedUrls);
-                } 
-                // If we are on media tab, simply refresh
-                if (activeTab === 'media') {
-                    refreshMedia();
-                }
-            } else {
-                showMessage("Failed to upload images", "error");
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const result = await uploadImage(formData);
+            if (result.success && result.url) {
+                uploadCallback(result.url);
+                showMessage("Image uploaded successfully!");
             }
-
         } catch (error: any) {
             console.error(error);
-            showMessage(`Upload Critical Error: ${error.message}`, 'error');
+            showMessage(`Upload Failed: ${error.message}`, 'error');
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
             setUploadCallback(null);
         }
-    };
-
-    const handleDeleteMedia = async (path: string) => {
-        if (!confirm("Are you sure you want to permanently delete this file? This cannot be undone and may break links on your site.")) return;
-
-        try {
-            await deleteImage(path);
-            showMessage("File deleted successfully");
-            refreshMedia();
-        } catch (error: any) {
-            showMessage(`Delete failed: ${error.message}`, "error");
-        }
-    };
-
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        showMessage("URL Copied to clipboard!");
     };
 
     // --- Reorder Logic (Buttons & Drag) ---
@@ -316,6 +245,7 @@ export default function AdminPage() {
 
     const handleDragStart = (e: React.DragEvent, index: number) => {
         dragItem.current = index;
+        // visual effect only
         e.dataTransfer.effectAllowed = "move";
     };
 
@@ -469,13 +399,12 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-neutral-950 text-neutral-200 flex flex-col md:flex-row font-sans">
             
-            {/* Shared Hidden File Input - Updated to Multiple */}
+            {/* Shared Hidden File Input */}
             <input 
                 type="file" 
                 ref={fileInputRef} 
                 className="hidden" 
                 accept="image/*"
-                multiple
                 onChange={handleFileChange}
             />
 
@@ -484,7 +413,7 @@ export default function AdminPage() {
                 <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center">
                     <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl flex flex-col items-center gap-4">
                         <Loader2 className="animate-spin text-white" size={32} />
-                        <p className="text-sm font-mono">Uploading Images...</p>
+                        <p className="text-sm font-mono">Uploading Image...</p>
                     </div>
                 </div>
             )}
@@ -518,12 +447,6 @@ export default function AdminPage() {
                     >
                         <User size={18} /> Profile
                     </button>
-                    <button 
-                        onClick={() => setActiveTab('media')}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${activeTab === 'media' ? 'bg-white text-black font-medium' : 'hover:bg-neutral-800 text-neutral-400'}`}
-                    >
-                        <ImageIcon size={18} /> Media
-                    </button>
                 </nav>
 
                 <div className="space-y-2">
@@ -542,24 +465,14 @@ export default function AdminPage() {
                 <header className="sticky top-0 z-20 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 p-4 md:p-6 flex justify-between items-center">
                     <h2 className="text-xl font-bold capitalize">{activeTab} Manager</h2>
                     <div className="flex gap-4">
-                        {activeTab !== 'media' && (
-                            <button 
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
-                            >
-                                {isSaving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18} />}
-                                {isSaving ? 'Committing...' : 'Commit Changes'}
-                            </button>
-                        )}
-                        {activeTab === 'media' && (
-                             <button 
-                                onClick={() => triggerUpload()}
-                                className="bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                            >
-                                <Upload size={18} /> Upload Images
-                            </button>
-                        )}
+                        <button 
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="bg-white hover:bg-neutral-200 text-black font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                            {isSaving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18} />}
+                            {isSaving ? 'Committing...' : 'Commit Changes'}
+                        </button>
                     </div>
                 </header>
 
@@ -641,7 +554,7 @@ export default function AdminPage() {
                                                         placeholder="Cover Image URL"
                                                     />
                                                     <button 
-                                                        onClick={() => triggerUpload((urls) => updateProject(project.id, 'image', urls[0]))}
+                                                        onClick={() => triggerUpload((url) => updateProject(project.id, 'image', url))}
                                                         className="bg-neutral-800 hover:bg-white hover:text-black text-white p-2 rounded transition-colors"
                                                         title="Upload Image"
                                                     >
@@ -732,9 +645,9 @@ export default function AdminPage() {
                                                     <div className="flex justify-between items-center mb-1">
                                                         <label className={labelStyle}>Gallery Images (New lines or comma separated)</label>
                                                         <button 
-                                                            onClick={() => triggerUpload((urls) => {
+                                                            onClick={() => triggerUpload((url) => {
                                                                 const currentGallery = project.gallery || [];
-                                                                updateProject(project.id, 'gallery', [...currentGallery, ...urls]);
+                                                                updateProject(project.id, 'gallery', [...currentGallery, url]);
                                                             })}
                                                             className="text-[10px] flex items-center gap-1 bg-neutral-800 hover:bg-white hover:text-black px-2 py-0.5 rounded transition-colors"
                                                         >
@@ -979,60 +892,6 @@ export default function AdminPage() {
                                         <p className="text-neutral-600 text-sm font-mono text-center py-4">No social links added yet.</p>
                                     )}
                                 </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* --- MEDIA GALLERY TAB --- */}
-                    {activeTab === 'media' && (
-                        <div className="space-y-6">
-                            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 min-h-[500px]">
-                                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                                    <ImageIcon size={18} /> Media Library
-                                </h3>
-
-                                {isMediaLoading ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-neutral-500">
-                                        <Loader2 className="animate-spin mb-4" size={32} />
-                                        <p>Loading files...</p>
-                                    </div>
-                                ) : mediaFiles.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 text-neutral-500 border-2 border-dashed border-neutral-800 rounded-lg">
-                                        <ImageIcon size={48} className="mb-4 opacity-50" />
-                                        <p>No images found in database/media/image/</p>
-                                        <button onClick={() => triggerUpload()} className="mt-4 text-white hover:underline">Upload your first image</button>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                        {mediaFiles.map((file, idx) => (
-                                            <div key={idx} className="group relative bg-neutral-950 border border-neutral-800 rounded-lg overflow-hidden aspect-square">
-                                                <img 
-                                                    src={file.url} 
-                                                    alt={file.name} 
-                                                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                                    loading="lazy"
-                                                />
-                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
-                                                    <button 
-                                                        onClick={() => copyToClipboard(file.url)}
-                                                        className="bg-white text-black text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-neutral-200"
-                                                    >
-                                                        <Copy size={12} /> Copy URL
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleDeleteMedia(file.path)}
-                                                        className="bg-red-500/20 text-red-500 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-red-500 hover:text-white"
-                                                    >
-                                                        <Trash2 size={12} /> Delete
-                                                    </button>
-                                                </div>
-                                                <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-1">
-                                                    <p className="text-[10px] font-mono text-center truncate px-2 text-neutral-400">{file.name}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}
