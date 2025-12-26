@@ -13,9 +13,7 @@ export const DEFAULT_PROJECTS: Project[] = [
         "link": "#",
         "image": "https://sova-studio.vercel.app/static/assets/projects/yamatoramen.jpg",
         "gallery": [
-            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(1).jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(2).jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(3).jpg"
+            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766735683261-4hxi93s-yamatoramen__1_.jpg"
         ],
         "year": "2025",
         "role": "Graphic Designer",
@@ -32,8 +30,8 @@ export const DEFAULT_PROJECTS: Project[] = [
         "link": "https://instagram.com/genzetjatim",
         "image": "https://sova-studio.vercel.app/static/assets/projects/GENZET.jpg",
         "gallery": [
-            "https://sova-studio.vercel.app/static/assets/projects/GENZET%201.jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/GENZET%202.jpg"
+            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766735710590-ymierua-GENZET_2.jpg",
+            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766735714757-621v31q-GENZET_1.jpg"
         ],
         "year": "2022",
         "role": "Graphic Designer",
