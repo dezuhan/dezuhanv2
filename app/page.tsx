@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Project, ArchiveItem } from '../types';
 import { DEFAULT_PROJECTS, DEFAULT_ARCHIVE, PROFILE_DATA } from '../database';
 import { ProjectDetail } from '../components/ProjectDetail';
+import { AdminPanel } from '../components/AdminPanel';
 import { Moon, Sun, X, Menu, Check } from 'lucide-react';
 
 // --- Components ---
@@ -27,36 +28,92 @@ const Clock = () => {
     );
 };
 
+// Preloader Component (Only for Dev/AI Studio)
+const Preloader = ({ onComplete }: { onComplete: () => void }) => {
+    const [count, setCount] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCount(prev => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    return 100;
+                }
+                // Random speed increment
+                return Math.min(prev + Math.floor(Math.random() * 5) + 2, 100);
+            });
+        }, 50);
+
+        const timeout = setTimeout(() => {
+            onComplete();
+        }, 2500);
+
+        return () => {
+            clearInterval(interval);
+            clearTimeout(timeout);
+        };
+    }, [onComplete]);
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black text-white flex flex-col items-center justify-center animate-fade-in">
+            <div className="text-6xl md:text-8xl font-bold tracking-tighter mb-4">
+                DEZUHAN
+            </div>
+            <div className="flex flex-col items-center gap-2">
+                <div className="w-64 h-[1px] bg-white/20 relative overflow-hidden">
+                    <div 
+                        className="absolute top-0 left-0 bottom-0 bg-white transition-all duration-100 ease-out" 
+                        style={{ width: `${count}%` }}
+                    />
+                </div>
+                <div className="font-mono text-xs opacity-50 tracking-widest">
+                    SYSTEM LOADING {count}%
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Reusable Footer Component
-const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
-    <footer className={`p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end text-[10px] md:text-xs font-mono uppercase tracking-widest z-40 gap-8 md:gap-0 ${className}`}>
-        <div className="order-2 md:order-1">
-            <p className="opacity-50">© 2025 Dezuhan</p>
-            <p>Creative Designer</p>
-        </div>
-        
-        {/* Right Side: Links & Contact */}
-        <div className="order-1 md:order-2 w-full md:w-auto flex flex-row md:flex-row items-start gap-8 md:gap-12 text-left">
-            <div className="flex flex-col gap-1">
-                {PROFILE_DATA.socials.map((social, idx) => (
-                    <a 
-                        key={idx}
-                        href={social.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="hover:opacity-100 opacity-50 transition-opacity"
+const Footer: React.FC<{ className?: string, onOpenAdmin?: () => void }> = ({ className = '', onOpenAdmin }) => {
+    return (
+        <footer className={`p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end text-[10px] md:text-xs font-mono uppercase tracking-widest z-40 gap-8 md:gap-0 ${className}`}>
+            <div className="order-2 md:order-1">
+                <p className="opacity-50">© 2025 Dezuhan</p>
+                <p>Creative Designer</p>
+                {onOpenAdmin && (
+                    <button 
+                        onClick={onOpenAdmin}
+                        className="text-red-500 hover:text-red-400 hover:underline transition-colors mt-4 block font-bold text-xs text-left"
                     >
-                        {social.platform}
-                    </a>
-                ))}
+                        [ ● ACCESS ADMIN ]
+                    </button>
+                )}
             </div>
-            <div className="flex flex-col gap-1">
-                <a href={`mailto:${PROFILE_DATA.email}`} className="hover:opacity-100 opacity-50 transition-opacity">{PROFILE_DATA.email}</a>
-                <p className="opacity-50">{PROFILE_DATA.phone}</p>
+            
+            {/* Right Side: Links & Contact */}
+            <div className="order-1 md:order-2 w-full md:w-auto flex flex-row md:flex-row items-start gap-8 md:gap-12 text-left">
+                <div className="flex flex-col gap-1">
+                    {PROFILE_DATA.socials.map((social, idx) => (
+                        <a 
+                            key={idx}
+                            href={social.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="hover:opacity-100 opacity-50 transition-opacity"
+                        >
+                            {social.platform}
+                        </a>
+                    ))}
+                </div>
+                <div className="flex flex-col gap-1">
+                    <a href={`mailto:${PROFILE_DATA.email}`} className="hover:opacity-100 opacity-50 transition-opacity">{PROFILE_DATA.email}</a>
+                    <p className="opacity-50">{PROFILE_DATA.phone}</p>
+                </div>
             </div>
-        </div>
-    </footer>
-);
+        </footer>
+    );
+};
 
 // --- Main App ---
 
@@ -67,6 +124,12 @@ export default function Home() {
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     
+    // Admin State
+    const [showAdmin, setShowAdmin] = useState(false);
+    
+    // Preloader State
+    const [isLoading, setIsLoading] = useState(true);
+
     // Archive Expansion State
     const [expandedArchiveId, setExpandedArchiveId] = useState<number | null>(null);
 
@@ -84,12 +147,22 @@ export default function Home() {
     const startY = useRef(0);
     const [cursorStyle, setCursorStyle] = useState('cursor-default');
 
-    // Initialize Theme
+    // Initialize Theme & Check Environment for Preloader
     useEffect(() => {
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
+        }
+
+        // Check if we are in AI Studio / Localhost
+        if (typeof window !== 'undefined') {
+            const isProduction = window.location.hostname === 'dezuhan.vercel.app';
+            if (isProduction) {
+                // Skip preloader in production if desired, or set to true to always show
+                setIsLoading(false); 
+            }
+            // If NOT production (AI Studio), isLoading remains true initially
         }
     }, [theme]);
 
@@ -301,7 +374,7 @@ export default function Home() {
                 </div>
             </div>
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
         </div>
     );
 
@@ -388,7 +461,7 @@ export default function Home() {
                 </div>
             </div>
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
         </div>
     );
 
@@ -430,7 +503,7 @@ export default function Home() {
             </div>
 
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
         </div>
     );
 
@@ -438,6 +511,10 @@ export default function Home() {
         setView(targetView);
         setIsMenuOpen(false);
     };
+
+    if (isLoading) {
+        return <Preloader onComplete={() => setIsLoading(false)} />;
+    }
 
     return (
         <div className={`min-h-screen flex flex-col relative transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
@@ -477,6 +554,15 @@ export default function Home() {
                     </button>
                     
                     <div className="flex items-center gap-6 pl-6 border-l border-current border-opacity-20">
+                        {/* Admin Trigger (Desktop) */}
+                        <button 
+                            onClick={() => setShowAdmin(true)}
+                            className="hover:opacity-50 transition-opacity text-red-500 font-bold text-xs flex items-center gap-2"
+                            title="Admin Access"
+                        >
+                             <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                            ADMIN
+                        </button>
                         <button onClick={toggleTheme} className="hover:opacity-70 transition-opacity">
                             {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
                         </button>
@@ -534,7 +620,15 @@ export default function Home() {
                     </div>
 
                     <div className="flex justify-between items-end border-t border-current border-opacity-10 pt-6">
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 items-center">
+                             {/* Admin Trigger (Mobile) */}
+                            <button 
+                                onClick={() => { setShowAdmin(true); setIsMenuOpen(false); }}
+                                className="text-xs font-bold tracking-widest uppercase text-red-500"
+                            >
+                                [ ● ADMIN ]
+                            </button>
+                            <div className="w-[1px] h-3 bg-current opacity-20"></div>
                             <button 
                                 onClick={toggleTheme} 
                                 className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase"
@@ -568,7 +662,7 @@ export default function Home() {
             </main>
 
             {view === 'home' && (
-                <Footer className="fixed bottom-0 left-0 right-0 pointer-events-none [&>*]:pointer-events-auto" />
+                <Footer className="fixed bottom-0 left-0 right-0 pointer-events-none [&>*]:pointer-events-auto" onOpenAdmin={() => setShowAdmin(true)} />
             )}
 
             {view === 'detail' && selectedProjectId && (
@@ -576,6 +670,11 @@ export default function Home() {
                     project={projects.find(p => p.id === selectedProjectId)!}
                     onBack={() => setView('work')} // Default back to work logic
                 />
+            )}
+
+            {/* Admin Overlay */}
+            {showAdmin && (
+                <AdminPanel onClose={() => setShowAdmin(false)} />
             )}
 
             <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0 mix-blend-overlay" 

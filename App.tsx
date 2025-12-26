@@ -2,17 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Project, ArchiveItem } from './types';
 import { DEFAULT_PROJECTS, PROFILE_DATA, DEFAULT_ARCHIVE } from './database';
 import { ProjectDetail } from './components/ProjectDetail';
-import { Moon, Sun, X, Menu, Check, Circle } from 'lucide-react';
+import { AdminPanel } from './components/AdminPanel';
+import { Moon, Sun, X, Menu, Check } from 'lucide-react';
 
 // --- Components ---
 
 const Clock = () => {
-    const [time, setTime] = useState(new Date());
+    const [time, setTime] = useState<Date | null>(null);
 
     useEffect(() => {
+        setTime(new Date());
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    if (!time) return null;
 
     return (
         <span className="font-mono text-xs tracking-wider opacity-60">
@@ -22,14 +26,22 @@ const Clock = () => {
 };
 
 // Reusable Footer Component
-const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
-    <footer className={`p-6 md:p-8 flex justify-between items-end text-[10px] md:text-xs font-mono uppercase tracking-widest z-40 ${className}`}>
-        <div>
+const Footer: React.FC<{ className?: string, onOpenAdmin?: () => void }> = ({ className = '', onOpenAdmin }) => (
+    <footer className={`p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end text-[10px] md:text-xs font-mono uppercase tracking-widest z-40 gap-8 md:gap-0 ${className}`}>
+        <div className="order-2 md:order-1">
             <p className="opacity-50">© 2025 Dezuhan</p>
             <p>Creative Designer</p>
+            {onOpenAdmin && (
+                <button 
+                    onClick={onOpenAdmin}
+                    className="text-red-500 hover:text-red-400 hover:underline transition-colors mt-4 block font-bold text-xs text-left"
+                >
+                    [ ● ACCESS ADMIN ]
+                </button>
+            )}
         </div>
         
-        <div className="text-right flex items-start gap-8 md:gap-12">
+        <div className="order-1 md:order-2 w-full md:w-auto flex flex-row md:flex-row items-start gap-8 md:gap-12 text-left">
             <div className="flex flex-col gap-1">
                 {PROFILE_DATA.socials.map((social, idx) => (
                     <a 
@@ -43,7 +55,7 @@ const Footer: React.FC<{ className?: string }> = ({ className = '' }) => (
                     </a>
                 ))}
             </div>
-            <div className="flex flex-col gap-1 text-right">
+            <div className="flex flex-col gap-1 text-right md:text-left">
                 <a href={`mailto:${PROFILE_DATA.email}`} className="hover:opacity-100 opacity-50 transition-opacity">{PROFILE_DATA.email}</a>
                 <p className="opacity-50">{PROFILE_DATA.phone}</p>
             </div>
@@ -60,6 +72,9 @@ const App: React.FC = () => {
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     
+    // Admin State
+    const [showAdmin, setShowAdmin] = useState(false);
+
     // Archive Expansion State
     const [expandedArchiveId, setExpandedArchiveId] = useState<number | null>(null);
 
@@ -301,7 +316,7 @@ const App: React.FC = () => {
             </div>
             
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
         </div>
     );
 
@@ -391,7 +406,7 @@ const App: React.FC = () => {
                 </div>
             </div>
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
         </div>
     );
 
@@ -434,7 +449,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
         </div>
     );
 
@@ -447,7 +462,7 @@ const App: React.FC = () => {
         <div className={`min-h-screen flex flex-col relative transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
             
             {/* Header */}
-            <header className={`fixed top-0 left-0 right-0 z-40 px-6 py-6 md:px-12 md:py-8 flex justify-between items-start pointer-events-none transition-opacity duration-300 ${view === 'detail' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <header className={`fixed top-0 left-0 right-0 z-40 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center pointer-events-none transition-opacity duration-300 ${view === 'detail' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 <div className="flex flex-col gap-1 z-50 pointer-events-auto">
                     <button 
                         onClick={() => setView('home')} 
@@ -458,7 +473,7 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Desktop Nav */}
-                <nav className="hidden md:flex items-start gap-8 md:gap-12 z-50 pointer-events-auto">
+                <nav className="hidden md:flex items-center gap-8 md:gap-12 z-50 pointer-events-auto">
                     <button 
                         onClick={() => setView('work')}
                         className={`text-xs font-bold tracking-widest uppercase hover:opacity-100 transition-opacity ${view === 'work' ? 'opacity-100' : 'opacity-40'}`}
@@ -479,6 +494,7 @@ const App: React.FC = () => {
                     </button>
                     
                     <div className="flex items-center gap-6 pl-6 border-l border-current border-opacity-20">
+                        {/* Admin Button Removed from Header */}
                         <button onClick={toggleTheme} className="hover:opacity-70 transition-opacity">
                             {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
                         </button>
@@ -498,8 +514,8 @@ const App: React.FC = () => {
             {/* Mobile Menu Overlay */}
             {isMenuOpen && (
                 <div className="fixed inset-0 z-[60] bg-[#f4f4f5] dark:bg-[#09090b] flex flex-col p-6 animate-fade-in">
-                    <div className="flex justify-between items-start mb-12">
-                        <div className="text-sm font-bold tracking-widest uppercase">
+                    <div className="flex justify-between items-center mb-12">
+                        <div className="text-sm font-bold tracking-widest uppercase mt-auto mb-auto">
                             Dezuhan
                         </div>
                         <button onClick={() => setIsMenuOpen(false)} className="p-1">
@@ -535,7 +551,8 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="flex justify-between items-end border-t border-current border-opacity-10 pt-6">
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 items-center">
+                             {/* Admin Button Removed from Mobile Menu */}
                             <button 
                                 onClick={toggleTheme} 
                                 className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase"
@@ -570,7 +587,7 @@ const App: React.FC = () => {
 
             {/* Footer for Home (Fixed) */}
             {view === 'home' && (
-                <Footer className="fixed bottom-0 left-0 right-0 pointer-events-none [&>*]:pointer-events-auto" />
+                <Footer className="fixed bottom-0 left-0 right-0 pointer-events-none [&>*]:pointer-events-auto" onOpenAdmin={() => setShowAdmin(true)} />
             )}
 
             {/* Project Detail Overlay */}
@@ -579,6 +596,11 @@ const App: React.FC = () => {
                     project={projects.find(p => p.id === selectedProjectId)!}
                     onBack={() => setView('work')} // Default back to work logic
                 />
+            )}
+
+            {/* Admin Overlay */}
+            {showAdmin && (
+                <AdminPanel onClose={() => setShowAdmin(false)} />
             )}
 
             {/* Background Grain/Texture (Optional) */}
