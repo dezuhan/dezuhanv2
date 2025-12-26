@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, ArchiveItem, ProfileData, SocialLink } from '../types';
 import { getGitHubFile, updateGitHubFile, loginAdmin, uploadImage, getMediaFiles, deleteImage } from '../app/actions';
+import { compressImage } from '../utils/imageCompression';
 import { Save, Plus, Trash2, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical, ChevronUp, ChevronDown, Link as LinkIcon, Mail, Phone, User, Upload, Image as ImageIcon, Copy, X } from 'lucide-react';
 
 // --- Types ---
@@ -84,6 +85,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     // Upload State
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadStatus, setUploadStatus] = useState("Uploading..."); // New status state
     const [uploadCallback, setUploadCallback] = useState<((urls: string[]) => void) | null>(null);
 
     // File SHA Tracking
@@ -217,35 +219,54 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         if (!files || files.length === 0) return;
 
         setIsUploading(true);
+        setUploadStatus("Processing...");
         const uploadedUrls: string[] = [];
-        let errorCount = 0;
-        let lastErrorMsg = "";
+        let errors = 0;
 
         try {
             const fileArray = Array.from(files);
-            for (const file of fileArray) {
+            
+            for (let i = 0; i < fileArray.length; i++) {
+                const file = fileArray[i];
+                setUploadStatus(`Processing ${i + 1}/${fileArray.length}...`);
+                
+                // --- Compression Step ---
+                let fileToUpload = file;
+                try {
+                    // If > 3MB, compress. Returns generic File object.
+                    fileToUpload = await compressImage(file);
+                } catch (cErr) {
+                    console.warn("Compression failed, trying original", cErr);
+                }
+
                 const formData = new FormData();
-                formData.append('file', file);
+                formData.append('file', fileToUpload);
+                
                 try {
                     const result = await uploadImage(formData);
                     if (result && result.success && result.url) {
                         uploadedUrls.push(result.url);
                     } else {
-                        errorCount++;
+                        console.error("Upload returned invalid result structure", result);
+                        errors++;
                     }
-                } catch (err: any) {
-                    errorCount++;
-                    lastErrorMsg = err.message || "Unknown error";
-                    console.error("Upload error for file " + file.name, err);
+                } catch (err) {
+                    console.error("Upload Error for file " + file.name, err);
+                    errors++;
                 }
             }
 
             if (uploadedUrls.length > 0) {
-                showMessage(`Uploaded ${uploadedUrls.length} image(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}.`);
-                if (uploadCallback) uploadCallback(uploadedUrls);
-                if (activeTab === 'media') refreshMedia();
-            } else if (errorCount > 0) {
-                showMessage(`Failed to upload images. Error: ${lastErrorMsg || "Check console"}`, "error");
+                showMessage(`Uploaded ${uploadedUrls.length} image(s)${errors > 0 ? `, ${errors} failed` : ''}.`);
+                
+                if (uploadCallback) {
+                    uploadCallback(uploadedUrls);
+                } 
+                if (activeTab === 'media') {
+                    refreshMedia();
+                }
+            } else if (errors > 0) {
+                showMessage("Failed to upload images. Check console for details.", "error");
             }
 
         } catch (error: any) {
@@ -255,11 +276,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = ''; 
             setUploadCallback(null);
+            setUploadStatus("Uploading...");
         }
     };
 
     const handleDeleteMedia = async (path: string) => {
-        if (!confirm("Are you sure you want to permanently delete this file?")) return;
+        if (!confirm("Are you sure you want to permanently delete this file? This cannot be undone.")) return;
+
         try {
             await deleteImage(path);
             showMessage("File deleted successfully");
@@ -271,10 +294,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        showMessage("URL Copied!");
+        showMessage("URL Copied to clipboard!");
     };
 
-    // --- Reorder Logic ---
+    // --- Reorder Logic (Buttons & Drag) ---
     const moveItem = (type: 'projects' | 'archive' | 'socials', index: number, direction: 'up' | 'down') => {
         if (type === 'socials') {
             const list = [...profile.socials];
@@ -479,7 +502,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                             <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
                                 <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl flex flex-col items-center gap-4">
                                     <Loader2 className="animate-spin text-white" size={32} />
-                                    <p className="text-sm font-mono">Uploading Images...</p>
+                                    <p className="text-sm font-mono">{uploadStatus}</p>
                                 </div>
                             </div>
                         )}
