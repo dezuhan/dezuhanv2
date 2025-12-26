@@ -222,25 +222,27 @@ export default function AdminPage() {
         let errors = 0;
 
         try {
-            // Convert FileList to Array to map
+            // Convert FileList to Array
             const fileArray = Array.from(files);
             
-            // Upload files in parallel
-            await Promise.all(fileArray.map(async (file) => {
+            // IMPORTANT: Upload sequentially to avoid GitHub API "Fast Forward" rejection or rate limiting
+            for (const file of fileArray) {
                 const formData = new FormData();
                 formData.append('file', file);
                 try {
                     const result = await uploadImage(formData);
+                    // Check if result exists and has success property
                     if (result && result.success && result.url) {
                         uploadedUrls.push(result.url);
                     } else {
+                        console.error("Upload returned invalid result structure", result);
                         errors++;
                     }
                 } catch (err) {
                     console.error("Upload Error for file " + file.name, err);
                     errors++;
                 }
-            }));
+            }
 
             if (uploadedUrls.length > 0) {
                 showMessage(`Uploaded ${uploadedUrls.length} image(s)${errors > 0 ? `, ${errors} failed` : ''}.`);
@@ -254,7 +256,7 @@ export default function AdminPage() {
                     refreshMedia();
                 }
             } else if (errors > 0) {
-                showMessage("Failed to upload images", "error");
+                showMessage("Failed to upload images. Check console for details.", "error");
             }
 
         } catch (error: any) {

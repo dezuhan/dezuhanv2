@@ -105,10 +105,11 @@ export async function uploadImage(formData: FormData) {
     const file = formData.get('file') as File;
     if (!file) throw new Error("No file provided");
 
-    // Create a unique path: database/media/image/[timestamp]-[filename]
-    // Sanitize filename to avoid issues
+    // Create a unique path: database/media/image/[timestamp]-[random]-[filename]
+    // Sanitize filename and add random string to ensure uniqueness
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const path = `database/media/image/${Date.now()}-${sanitizedFilename}`;
+    const uniqueId = Math.random().toString(36).substring(2, 9);
+    const path = `database/media/image/${Date.now()}-${uniqueId}-${sanitizedFilename}`;
     
     // Convert file to Base64
     const arrayBuffer = await file.arrayBuffer();
@@ -131,8 +132,15 @@ export async function uploadImage(formData: FormData) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`GitHub Upload Failed: ${errorData.message}`);
+            // Try to parse error message safely
+            let errorMessage = response.statusText;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+                // Ignore json parse error
+            }
+            throw new Error(`GitHub Upload Failed (${response.status}): ${errorMessage}`);
         }
 
         // Return the Raw URL so it can be used in the app
