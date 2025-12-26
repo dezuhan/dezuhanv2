@@ -267,7 +267,8 @@ export default function Home() {
     const renderGrid = () => (
         <div className="w-full animate-fade-in flex flex-col min-h-screen">
              <div className="flex-1 w-full px-6 md:px-12 pt-32 pb-32">
-                <div className="mb-24 border-b border-current border-opacity-10 pb-6">
+                {/* Updated Border */}
+                <div className="mb-24 border-b border-neutral-200 dark:border-neutral-800 pb-6">
                     <h2 className="text-5xl md:text-6xl font-bold tracking-tight">Selected Work</h2>
                     <p className="text-sm opacity-50 mt-4 font-mono">2022 — Present</p>
                 </div>
@@ -299,7 +300,8 @@ export default function Home() {
                     ))}
                 </div>
             </div>
-            <Footer className="border-t border-current/10" />
+            {/* Updated Border */}
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
         </div>
     );
 
@@ -313,7 +315,8 @@ export default function Home() {
                     </div>
 
                     <div className="w-full">
-                        <div className="hidden md:grid grid-cols-12 gap-4 pb-4 border-b border-current border-opacity-20 text-[10px] uppercase font-mono tracking-widest opacity-50 sticky top-24 bg-background dark:bg-black z-10">
+                        {/* Updated Border & Background Fix */}
+                        <div className="hidden md:grid grid-cols-12 gap-4 pb-4 border-b border-neutral-200 dark:border-neutral-800 text-[10px] uppercase font-mono tracking-widest text-neutral-500 sticky top-24 bg-[#f4f4f5] dark:bg-[#09090b] z-10">
                             <div className="col-span-2">Date</div>
                             <div className="col-span-6">Role / Company</div>
                             <div className="col-span-4 text-right">Location / Type</div>
@@ -325,7 +328,8 @@ export default function Home() {
                                 return (
                                     <div 
                                         key={item.id}
-                                        className={`group flex flex-col border-b border-current border-opacity-10 transition-all duration-500 ${isExpanded ? 'bg-black/5 dark:bg-white/5 pb-6 rounded-lg my-2 border-transparent' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                        /* Updated Border */
+                                        className={`group flex flex-col border-b border-neutral-200 dark:border-neutral-800 transition-all duration-500 ${isExpanded ? 'bg-black/5 dark:bg-white/5 pb-6 rounded-lg my-2 border-transparent' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                                     >
                                         <div 
                                             className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 py-6 px-2 md:px-0 cursor-pointer"
@@ -355,7 +359,8 @@ export default function Home() {
                                             className={`grid grid-cols-1 md:grid-cols-12 gap-4 px-2 md:px-0 overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0'}`}
                                         >
                                             <div className="hidden md:block col-span-2"></div>
-                                            <div className="col-span-12 md:col-span-10 border-t border-current border-opacity-10 pt-4">
+                                            {/* Updated Border */}
+                                            <div className="col-span-12 md:col-span-10 border-t border-neutral-200 dark:border-neutral-800 pt-4">
                                                 {item.details && item.details.length > 0 && (
                                                     <ul className="space-y-2 mb-6">
                                                         {item.details.map((detail, idx) => (
@@ -382,7 +387,8 @@ export default function Home() {
                     </div>
                 </div>
             </div>
-            <Footer className="border-t border-current/10" />
+            {/* Updated Border */}
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
         </div>
     );
 
@@ -396,7 +402,8 @@ export default function Home() {
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24 text-base pt-12 border-t border-current/10">
+                    {/* Updated Border */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24 text-base pt-12 border-t border-neutral-200 dark:border-neutral-800">
                         <div>
                             <h3 className="font-mono uppercase tracking-widest opacity-40 mb-6 text-sm">Contact</h3>
                             <ul className="space-y-4 opacity-80 text-lg">
@@ -422,7 +429,8 @@ export default function Home() {
                 </div>
             </div>
 
-            <Footer className="border-t border-current/10" />
+            {/* Updated Border */}
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" />
         </div>
     );
 
@@ -435,17 +443,20 @@ export default function Home() {
         <div className={`min-h-screen flex flex-col relative transition-colors duration-500 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
             
             {/* Header */}
-            <header className={`fixed top-0 left-0 right-0 z-40 px-6 py-6 md:px-12 md:py-8 flex justify-between items-start pointer-events-none transition-opacity duration-300 ${view === 'detail' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            {/* Updated: Changed items-start to items-center for vertical centering */}
+            <header className={`fixed top-0 left-0 right-0 z-40 px-6 py-6 md:px-12 md:py-8 flex justify-between items-center pointer-events-none transition-opacity duration-300 ${view === 'detail' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 <div className="flex flex-col gap-1 z-50 pointer-events-auto">
                     <button 
                         onClick={() => setView('home')} 
-                        className="text-sm font-bold tracking-widest uppercase text-left hover:opacity-70 transition-opacity"
+                        className="text-sm font-bold tracking-widest uppercase text-left hover:opacity-70 transition-opacity mt-auto mb-auto"
                     >
                         Dezuhan
                     </button>
                 </div>
 
-                <nav className="hidden md:flex items-start gap-8 md:gap-12 z-50 pointer-events-auto">
+                {/* Desktop Nav */}
+                {/* Updated: Changed items-start to items-center */}
+                <nav className="hidden md:flex items-center gap-8 md:gap-12 z-50 pointer-events-auto">
                     <button 
                         onClick={() => setView('work')}
                         className={`text-xs font-bold tracking-widest uppercase hover:opacity-100 transition-opacity ${view === 'work' ? 'opacity-100' : 'opacity-40'}`}
@@ -473,6 +484,7 @@ export default function Home() {
                     </div>
                 </nav>
 
+                {/* Mobile Menu Button */}
                 <button 
                     onClick={() => setIsMenuOpen(true)}
                     className="md:hidden z-50 pointer-events-auto p-1"
@@ -484,8 +496,9 @@ export default function Home() {
             {/* Mobile Menu Overlay */}
             {isMenuOpen && (
                 <div className="fixed inset-0 z-[60] bg-[#f4f4f5] dark:bg-[#09090b] flex flex-col p-6 animate-fade-in">
-                    <div className="flex justify-between items-start mb-12">
-                        <div className="text-sm font-bold tracking-widest uppercase">
+                    {/* Updated: Changed items-start to items-center */}
+                    <div className="flex justify-between items-center mb-12">
+                        <div className="text-sm font-bold tracking-widest uppercase mt-auto mb-auto">
                             Dezuhan
                         </div>
                         <button onClick={() => setIsMenuOpen(false)} className="p-1">
@@ -561,7 +574,7 @@ export default function Home() {
             {view === 'detail' && selectedProjectId && (
                 <ProjectDetail 
                     project={projects.find(p => p.id === selectedProjectId)!}
-                    onBack={() => setView('work')}
+                    onBack={() => setView('work')} // Default back to work logic
                 />
             )}
 

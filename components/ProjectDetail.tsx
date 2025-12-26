@@ -41,7 +41,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack })
                 </div>
 
                 {/* 3. Text Info Grid (About & Credits) */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-24 border-b border-current border-opacity-10 pb-16">
+                {/* Updated Border */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-24 border-b border-neutral-200 dark:border-neutral-800 pb-16">
                     {/* Description Column */}
                     <div className="md:col-span-8">
                         <h3 className="text-xs font-mono uppercase tracking-widest opacity-40 mb-6">About the project</h3>
@@ -94,7 +95,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack })
                 )}
                 
                 {/* Footer Navigation within Detail */}
-                <div className="mt-32 pt-12 border-t border-current border-opacity-10 flex justify-center">
+                {/* Updated Border */}
+                <div className="mt-32 pt-12 border-t border-neutral-200 dark:border-neutral-800 flex justify-center">
                     <button 
                         onClick={onBack}
                         className="text-xs font-mono uppercase tracking-widest opacity-50 hover:opacity-100 transition-opacity"

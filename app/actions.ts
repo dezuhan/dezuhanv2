@@ -1,12 +1,19 @@
 "use server";
 
 import { Buffer } from "buffer";
+import { uploadToExternalRepo } from "../services/mediaStorage";
 
+// Main App Config
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const OWNER = process.env.GITHUB_OWNER;
-const REPO = process.env.GITHUB_REPO;
-const BRANCH = process.env.GITHUB_BRANCH || 'main'; // Default to 'main' if not set
+const APP_OWNER = process.env.GITHUB_OWNER;
+const APP_REPO = process.env.GITHUB_REPO;
+const APP_BRANCH = process.env.GITHUB_BRANCH || 'main';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+// External Media Repo Config (Defaults to App config if not set, but cleaner to separate)
+const MEDIA_OWNER = process.env.MEDIA_REPO_OWNER || APP_OWNER;
+const MEDIA_REPO = process.env.MEDIA_REPO_NAME || APP_REPO;
+const MEDIA_BRANCH = process.env.MEDIA_REPO_BRANCH || 'main';
 
 const BASE_URL = 'https://api.github.com';
 
@@ -19,27 +26,25 @@ const headers = {
 // --- Authentication ---
 
 export async function loginAdmin(password: string) {
-    // Simple check against env variable
     if (!ADMIN_PASSWORD) {
         throw new Error("ADMIN_PASSWORD not set in .env");
     }
     return password === ADMIN_PASSWORD;
 }
 
-// --- GitHub Operations ---
+// --- GitHub Operations (For Code/Data Files) ---
 
 export async function getGitHubFile(path: string) {
-    if (!GITHUB_TOKEN || !OWNER || !REPO) {
+    if (!GITHUB_TOKEN || !APP_OWNER || !APP_REPO) {
         throw new Error("GitHub Configuration missing in .env");
     }
 
-    // Append ref query param to fetch from specific branch
-    const url = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`;
+    const url = `${BASE_URL}/repos/${APP_OWNER}/${APP_REPO}/contents/${path}?ref=${APP_BRANCH}`;
     
     try {
         const response = await fetch(url, { 
             headers,
-            cache: 'no-store' // Ensure we always fetch fresh data
+            cache: 'no-store'
         });
         
         if (!response.ok) {
@@ -48,7 +53,6 @@ export async function getGitHubFile(path: string) {
         }
 
         const data = await response.json();
-        // Decode Base64 content
         const content = Buffer.from(data.content, 'base64').toString('utf-8');
         
         return {
@@ -62,20 +66,18 @@ export async function getGitHubFile(path: string) {
 }
 
 export async function updateGitHubFile(path: string, content: string, sha: string, message: string) {
-    if (!GITHUB_TOKEN || !OWNER || !REPO) {
+    if (!GITHUB_TOKEN || !APP_OWNER || !APP_REPO) {
         throw new Error("GitHub Configuration missing in .env");
     }
 
-    const url = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}`;
-    
-    // Encode content to Base64
+    const url = `${BASE_URL}/repos/${APP_OWNER}/${APP_REPO}/contents/${path}`;
     const encodedContent = Buffer.from(content, 'utf-8').toString('base64');
 
     const body = {
         message,
         content: encodedContent,
         sha,
-        branch: BRANCH // Use the configured branch
+        branch: APP_BRANCH
     };
 
     try {
@@ -97,82 +99,47 @@ export async function updateGitHubFile(path: string, content: string, sha: strin
     }
 }
 
-export async function uploadImage(formData: FormData) {
-    if (!GITHUB_TOKEN || !OWNER || !REPO) {
-        throw new Error("GitHub Configuration missing in .env");
-    }
+// --- Media Management (Targeting External Media Repo) ---
 
+export async function uploadImage(formData: FormData) {
     const file = formData.get('file') as File;
     if (!file) throw new Error("No file provided");
 
-    // Create a unique path: database/media/image/[timestamp]-[random]-[filename]
-    // Sanitize filename and add random string to ensure uniqueness
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const uniqueId = Math.random().toString(36).substring(2, 9);
-    const path = `database/media/image/${Date.now()}-${uniqueId}-${sanitizedFilename}`;
-    
-    // Convert file to Base64
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const content = buffer.toString('base64');
-
-    const url = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}`;
-    
-    const body = {
-        message: `Upload image: ${sanitizedFilename}`,
-        content: content,
-        branch: BRANCH
-    };
-
     try {
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify(body)
-        });
+        // Convert File to Buffer
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-        if (!response.ok) {
-            // Try to parse error message safely
-            let errorMessage = response.statusText;
-            try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorMessage;
-            } catch (e) {
-                // Ignore json parse error
-            }
-            throw new Error(`GitHub Upload Failed (${response.status}): ${errorMessage}`);
-        }
-
-        // Return the Raw URL so it can be used in the app
-        // Note: Raw URLs might have caching delays. 
-        const publicUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}`;
+        // Call the Modular Service
+        // We can organize images by year or just put them in 'uploads'
+        const cdnUrl = await uploadToExternalRepo(buffer, file.name, 'uploads');
         
-        return { success: true, url: publicUrl };
+        return { success: true, url: cdnUrl };
+
     } catch (error: any) {
-        console.error("Upload Error:", error);
+        console.error("Upload Action Error:", error);
         throw new Error(error.message || "Failed to upload image");
     }
 }
 
-// --- Media Management ---
-
 export async function getMediaFiles() {
-    if (!GITHUB_TOKEN || !OWNER || !REPO) {
-        throw new Error("GitHub Configuration missing in .env");
+    if (!GITHUB_TOKEN || !MEDIA_OWNER || !MEDIA_REPO) {
+        throw new Error("Media Repository Configuration missing");
     }
 
-    const path = `database/media/image`;
-    const url = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`;
+    // List files from the 'uploads' folder in the MEDIA REPO
+    const path = `uploads`;
+    const url = `${BASE_URL}/repos/${MEDIA_OWNER}/${MEDIA_REPO}/contents/${path}?ref=${MEDIA_BRANCH}`;
 
     try {
         const response = await fetch(url, { headers, cache: 'no-store' });
         
         if (response.status === 404) {
-            return []; // No media folder yet
+            return []; // Folder doesn't exist yet
         }
 
         if (!response.ok) {
-            throw new Error(`Failed to list media files`);
+            throw new Error(`Failed to list media files from external repo`);
         }
 
         const data = await response.json();
@@ -181,27 +148,29 @@ export async function getMediaFiles() {
             return [];
         }
 
-        // Map GitHub API response to useful format
+        // Map response to include the CDN URL
         return data.map((file: any) => ({
             name: file.name,
             path: file.path,
             sha: file.sha,
-            url: file.download_url || `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${file.path}`
+            // Construct jsDelivr URL for viewing
+            url: `https://cdn.jsdelivr.net/gh/${MEDIA_OWNER}/${MEDIA_REPO}@${MEDIA_BRANCH}/${file.path}`
         }));
 
     } catch (error: any) {
         console.error("Get Media Error:", error);
-        throw new Error(error.message);
+        // Don't crash dashboard if media repo is empty or config is wrong, just return empty
+        return [];
     }
 }
 
 export async function deleteImage(path: string) {
-     if (!GITHUB_TOKEN || !OWNER || !REPO) {
-        throw new Error("GitHub Configuration missing in .env");
+     if (!GITHUB_TOKEN || !MEDIA_OWNER || !MEDIA_REPO) {
+        throw new Error("Media Repository Configuration missing");
     }
 
-    // 1. Get the SHA of the file first (required for deletion)
-    const getUrl = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`;
+    // 1. Get SHA from Media Repo
+    const getUrl = `${BASE_URL}/repos/${MEDIA_OWNER}/${MEDIA_REPO}/contents/${path}?ref=${MEDIA_BRANCH}`;
     let sha = '';
     
     try {
@@ -213,12 +182,12 @@ export async function deleteImage(path: string) {
         throw new Error("Could not find file metadata for deletion");
     }
 
-    // 2. Delete the file
-    const deleteUrl = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}`;
+    // 2. Delete from Media Repo
+    const deleteUrl = `${BASE_URL}/repos/${MEDIA_OWNER}/${MEDIA_REPO}/contents/${path}`;
     const body = {
         message: `Delete media: ${path.split('/').pop()}`,
         sha: sha,
-        branch: BRANCH
+        branch: MEDIA_BRANCH
     };
 
     try {
