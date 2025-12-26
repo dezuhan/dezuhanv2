@@ -2,6 +2,24 @@ import { Project } from '../types';
 
 export const DEFAULT_PROJECTS: Project[] = [
     {
+        "id": 2,
+        "title": "GENZET",
+        "description": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
+        "content": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
+        "tech": [
+            "Adobe Illustrator"
+        ],
+        "link": "https://instagram.com/genzetjatim",
+        "image": "https://sova-studio.vercel.app/static/assets/projects/GENZET.jpg",
+        "gallery": [
+            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766733415174-GENZET_1.jpg",
+            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766733431354-GENZET_2.jpg"
+        ],
+        "year": "2022",
+        "role": "Graphic Designer",
+        "client": "PT Mitra Mapan Mulia"
+    },
+    {
         "id": 1,
         "title": "YAMATO RAMEN",
         "description": "Social media design proposal for Yamato Ramen (Jakarta) by @artikarya.studio",
@@ -13,28 +31,12 @@ export const DEFAULT_PROJECTS: Project[] = [
         "link": "#",
         "image": "https://sova-studio.vercel.app/static/assets/projects/yamatoramen.jpg",
         "gallery": [
-            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766735683261-4hxi93s-yamatoramen__1_.jpg"
+            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(1).jpg",
+            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(2).jpg",
+            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(3).jpg"
         ],
         "year": "2025",
         "role": "Graphic Designer",
         "client": "Artikarya Studio"
-    },
-    {
-        "id": 2,
-        "title": "GENZET",
-        "description": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
-        "content": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
-        "tech": [
-            "Adobe Illustrator"
-        ],
-        "link": "https://instagram.com/genzetjatim",
-        "image": "https://sova-studio.vercel.app/static/assets/projects/GENZET.jpg",
-        "gallery": [
-            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766735710590-ymierua-GENZET_2.jpg",
-            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766735714757-621v31q-GENZET_1.jpg"
-        ],
-        "year": "2022",
-        "role": "Graphic Designer",
-        "client": "PT Mitra Mapan Mulia"
     }
 ];
