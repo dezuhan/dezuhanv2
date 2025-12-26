@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, ArchiveItem, ProfileData, SocialLink } from '../../types';
-import { getGitHubFile, updateGitHubFile, loginAdmin } from '../actions';
-import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical, ChevronUp, ChevronDown, Link as LinkIcon, Mail, Phone, User } from 'lucide-react';
+import { getGitHubFile, updateGitHubFile, loginAdmin, uploadImage } from '../actions';
+import { Save, Plus, Trash2, ArrowLeft, LogOut, Layout, Archive, FileText, Lock, Loader2, GripVertical, ChevronUp, ChevronDown, Link as LinkIcon, Mail, Phone, User, Upload, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 
 // --- Types ---
@@ -77,6 +77,11 @@ export default function AdminPage() {
     // Drag & Drop State
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
+
+    // Upload State
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadCallback, setUploadCallback] = useState<((url: string) => void) | null>(null);
 
     // File SHA Tracking
     const [shas, setShas] = useState({ projects: '', archive: '', bio: '' });
@@ -175,6 +180,37 @@ export default function AdminPage() {
             showMessage(`Save Failed: ${error.message}`, 'error');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    // --- Upload Logic ---
+
+    const triggerUpload = (callback: (url: string) => void) => {
+        setUploadCallback(() => callback);
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !uploadCallback) return;
+
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const result = await uploadImage(formData);
+            if (result.success && result.url) {
+                uploadCallback(result.url);
+                showMessage("Image uploaded successfully!");
+            }
+        } catch (error: any) {
+            console.error(error);
+            showMessage(`Upload Failed: ${error.message}`, 'error');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+            setUploadCallback(null);
         }
     };
 
@@ -363,6 +399,25 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-neutral-950 text-neutral-200 flex flex-col md:flex-row font-sans">
             
+            {/* Shared Hidden File Input */}
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleFileChange}
+            />
+
+            {/* Global Upload Overlay */}
+            {isUploading && (
+                <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl flex flex-col items-center gap-4">
+                        <Loader2 className="animate-spin text-white" size={32} />
+                        <p className="text-sm font-mono">Uploading Image...</p>
+                    </div>
+                </div>
+            )}
+            
             {/* Sidebar */}
             <aside className="w-full md:w-64 bg-neutral-900 border-r border-neutral-800 p-6 flex flex-col gap-8 shrink-0">
                 <div>
@@ -482,18 +537,30 @@ export default function AdminPage() {
                                         </div>
 
                                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                            {/* Image Preview */}
+                                            {/* Image Preview & Upload */}
                                             <div className="lg:col-span-3">
-                                                <div className="aspect-[4/3] bg-neutral-950 rounded overflow-hidden mb-2">
+                                                <div className="aspect-[4/3] bg-neutral-950 rounded overflow-hidden mb-2 group/image relative">
                                                     <img src={project.image} className="w-full h-full object-cover" alt="Preview" />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/image:opacity-100 flex items-center justify-center transition-opacity">
+                                                        <ImageIcon className="text-white/50" />
+                                                    </div>
                                                 </div>
-                                                <input 
-                                                    type="text"
-                                                    value={project.image}
-                                                    onChange={e => updateProject(project.id, 'image', e.target.value)}
-                                                    className="w-full bg-neutral-950 border border-neutral-800 rounded p-2 text-xs text-neutral-400 font-mono"
-                                                    placeholder="Cover Image URL"
-                                                />
+                                                <div className="flex gap-2">
+                                                    <input 
+                                                        type="text"
+                                                        value={project.image}
+                                                        onChange={e => updateProject(project.id, 'image', e.target.value)}
+                                                        className="w-full bg-neutral-950 border border-neutral-800 rounded p-2 text-xs text-neutral-400 font-mono"
+                                                        placeholder="Cover Image URL"
+                                                    />
+                                                    <button 
+                                                        onClick={() => triggerUpload((url) => updateProject(project.id, 'image', url))}
+                                                        className="bg-neutral-800 hover:bg-white hover:text-black text-white p-2 rounded transition-colors"
+                                                        title="Upload Image"
+                                                    >
+                                                        <Upload size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Form Fields */}
@@ -575,7 +642,18 @@ export default function AdminPage() {
 
                                                 {/* Gallery Management */}
                                                 <div>
-                                                    <label className={labelStyle}>Gallery Images (New lines or comma separated)</label>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <label className={labelStyle}>Gallery Images (New lines or comma separated)</label>
+                                                        <button 
+                                                            onClick={() => triggerUpload((url) => {
+                                                                const currentGallery = project.gallery || [];
+                                                                updateProject(project.id, 'gallery', [...currentGallery, url]);
+                                                            })}
+                                                            className="text-[10px] flex items-center gap-1 bg-neutral-800 hover:bg-white hover:text-black px-2 py-0.5 rounded transition-colors"
+                                                        >
+                                                            <Upload size={10} /> Quick Upload & Append
+                                                        </button>
+                                                    </div>
                                                     <textarea
                                                         value={(project.gallery || []).join('\n')}
                                                         onChange={e => updateProject(project.id, 'gallery', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}

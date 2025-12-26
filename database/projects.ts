@@ -2,7 +2,7 @@ import { Project } from '../types';
 
 export const DEFAULT_PROJECTS: Project[] = [
     {
-        "id": 5,
+        "id": 1,
         "title": "YAMATO RAMEN",
         "description": "Social media design proposal for Yamato Ramen (Jakarta) by @artikarya.studio",
         "content": "Yamato Ramen, a Japanese food restaurant based in Jakarta. The proposal design that we @artikarya.studio submitted to Yamato Ramen for social media designs. Logo is my personal initiative (Fake Project for Logo).",
@@ -20,5 +20,24 @@ export const DEFAULT_PROJECTS: Project[] = [
         "year": "2025",
         "role": "Graphic Designer",
         "client": "Artikarya Studio"
+    },
+    {
+        "id": 2,
+        "title": "GENZET",
+        "description": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
+        "content": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
+        "tech": [
+            "Adobe Illustrator"
+        ],
+        "link": "https://instagram.com/genzetjatim",
+        "image": "https://sova-studio.vercel.app/static/assets/projects/GENZET.jpg",
+        "gallery": [
+            "https://sova-studio.vercel.app/static/assets/projects/GENZET%201.jpg",
+            "https://sova-studio.vercel.app/static/assets/projects/GENZET%202.jpg",
+            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(3).jpg"
+        ],
+        "year": "2022",
+        "role": "Graphic Designer",
+        "client": "PT Mitra Mapan Mulia"
     }
 ];

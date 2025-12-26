@@ -96,3 +96,52 @@ export async function updateGitHubFile(path: string, content: string, sha: strin
         throw new Error(error.message || "Failed to update file");
     }
 }
+
+export async function uploadImage(formData: FormData) {
+    if (!GITHUB_TOKEN || !OWNER || !REPO) {
+        throw new Error("GitHub Configuration missing in .env");
+    }
+
+    const file = formData.get('file') as File;
+    if (!file) throw new Error("No file provided");
+
+    // Create a unique path: database/media/image/[timestamp]-[filename]
+    // Sanitize filename to avoid issues
+    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const path = `database/media/image/${Date.now()}-${sanitizedFilename}`;
+    
+    // Convert file to Base64
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const content = buffer.toString('base64');
+
+    const url = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}`;
+    
+    const body = {
+        message: `Upload image: ${sanitizedFilename}`,
+        content: content,
+        branch: BRANCH
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`GitHub Upload Failed: ${errorData.message}`);
+        }
+
+        // Return the Raw URL so it can be used in the app
+        // Note: Raw URLs might have caching delays. 
+        const publicUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}`;
+        
+        return { success: true, url: publicUrl };
+    } catch (error: any) {
+        console.error("Upload Error:", error);
+        throw new Error(error.message || "Failed to upload image");
+    }
+}
