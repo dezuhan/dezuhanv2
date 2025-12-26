@@ -31,9 +31,9 @@ export const DEFAULT_PROJECTS: Project[] = [
         "link": "#",
         "image": "https://sova-studio.vercel.app/static/assets/projects/yamatoramen.jpg",
         "gallery": [
-            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(1).jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(2).jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(3).jpg"
+            "https://cdn.jsdelivr.net/gh/dezuhan/dezuhan-project-media@main/uploads/mjmsgvbo-yamatoramen__1_.jpg",
+            "https://cdn.jsdelivr.net/gh/dezuhan/dezuhan-project-media@main/uploads/mjmsgqc0-yamatoramen__2___Large_.jpg",
+            "https://cdn.jsdelivr.net/gh/dezuhan/dezuhan-project-media@main/uploads/mjmsgoe0-yamatoramen__3___Large_.jpg"
         ],
         "year": "2025",
         "role": "Graphic Designer",
