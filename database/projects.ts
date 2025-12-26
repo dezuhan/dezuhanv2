@@ -33,8 +33,7 @@ export const DEFAULT_PROJECTS: Project[] = [
         "image": "https://sova-studio.vercel.app/static/assets/projects/GENZET.jpg",
         "gallery": [
             "https://sova-studio.vercel.app/static/assets/projects/GENZET%201.jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/GENZET%202.jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/yamatoramen%20(3).jpg"
+            "https://sova-studio.vercel.app/static/assets/projects/GENZET%202.jpg"
         ],
         "year": "2022",
         "role": "Graphic Designer",
