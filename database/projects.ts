@@ -12,8 +12,8 @@ export const DEFAULT_PROJECTS: Project[] = [
         "link": "https://instagram.com/genzetjatim",
         "image": "https://sova-studio.vercel.app/static/assets/projects/GENZET.jpg",
         "gallery": [
-            "https://sova-studio.vercel.app/static/assets/projects/GENZET%201.jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/GENZET%202.jpg"
+            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766733415174-GENZET_1.jpg",
+            "https://raw.githubusercontent.com/dezuhan/dezuhanv2/main/database/media/image/1766733431354-GENZET_2.jpg"
         ],
         "year": "2022",
         "role": "Graphic Designer",
