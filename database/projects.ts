@@ -2,6 +2,24 @@ import { Project } from '../types';
 
 export const DEFAULT_PROJECTS: Project[] = [
     {
+        "id": 2,
+        "title": "GENZET",
+        "description": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
+        "content": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
+        "tech": [
+            "Adobe Illustrator"
+        ],
+        "link": "https://instagram.com/genzetjatim",
+        "image": "https://sova-studio.vercel.app/static/assets/projects/GENZET.jpg",
+        "gallery": [
+            "https://sova-studio.vercel.app/static/assets/projects/GENZET%201.jpg",
+            "https://sova-studio.vercel.app/static/assets/projects/GENZET%202.jpg"
+        ],
+        "year": "2022",
+        "role": "Graphic Designer",
+        "client": "PT Mitra Mapan Mulia"
+    },
+    {
         "id": 1,
         "title": "YAMATO RAMEN",
         "description": "Social media design proposal for Yamato Ramen (Jakarta) by @artikarya.studio",
@@ -20,23 +38,5 @@ export const DEFAULT_PROJECTS: Project[] = [
         "year": "2025",
         "role": "Graphic Designer",
         "client": "Artikarya Studio"
-    },
-    {
-        "id": 2,
-        "title": "GENZET",
-        "description": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
-        "content": "GENZET seeks to introduce the figure of Erick Thohir to the wider community, by uploading activities and events handled by Erick Thohir on social networks.",
-        "tech": [
-            "Adobe Illustrator"
-        ],
-        "link": "https://instagram.com/genzetjatim",
-        "image": "https://sova-studio.vercel.app/static/assets/projects/GENZET.jpg",
-        "gallery": [
-            "https://sova-studio.vercel.app/static/assets/projects/GENZET%201.jpg",
-            "https://sova-studio.vercel.app/static/assets/projects/GENZET%202.jpg"
-        ],
-        "year": "2022",
-        "role": "Graphic Designer",
-        "client": "PT Mitra Mapan Mulia"
     }
 ];
