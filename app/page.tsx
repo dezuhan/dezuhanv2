@@ -126,6 +126,7 @@ export default function Home() {
     
     // Admin State
     const [showAdmin, setShowAdmin] = useState(false);
+    const [isAdminEnabled, setIsAdminEnabled] = useState(true); // Default to true (dev/localhost)
     
     // Preloader State
     const [isLoading, setIsLoading] = useState(true);
@@ -147,7 +148,7 @@ export default function Home() {
     const startY = useRef(0);
     const [cursorStyle, setCursorStyle] = useState('cursor-default');
 
-    // Initialize Theme & Check Environment for Preloader
+    // Initialize Theme & Check Environment for Preloader/Admin
     useEffect(() => {
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
@@ -157,12 +158,15 @@ export default function Home() {
 
         // Check if we are in AI Studio / Localhost
         if (typeof window !== 'undefined') {
-            const isProduction = window.location.hostname === 'dezuhan.vercel.app';
+            const hostname = window.location.hostname;
+            const isProduction = hostname === 'dezuhan.vercel.app';
+            
             if (isProduction) {
-                // Skip preloader in production if desired, or set to true to always show
+                // Skip preloader in production
                 setIsLoading(false); 
+                // Hide admin button in production
+                setIsAdminEnabled(false);
             }
-            // If NOT production (AI Studio), isLoading remains true initially
         }
     }, [theme]);
 
@@ -374,7 +378,7 @@ export default function Home() {
                 </div>
             </div>
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={isAdminEnabled ? () => setShowAdmin(true) : undefined} />
         </div>
     );
 
@@ -461,7 +465,7 @@ export default function Home() {
                 </div>
             </div>
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={isAdminEnabled ? () => setShowAdmin(true) : undefined} />
         </div>
     );
 
@@ -503,7 +507,7 @@ export default function Home() {
             </div>
 
             {/* Updated Border */}
-            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={() => setShowAdmin(true)} />
+            <Footer className="border-t border-neutral-200 dark:border-neutral-800" onOpenAdmin={isAdminEnabled ? () => setShowAdmin(true) : undefined} />
         </div>
     );
 
@@ -554,15 +558,17 @@ export default function Home() {
                     </button>
                     
                     <div className="flex items-center gap-6 pl-6 border-l border-current border-opacity-20">
-                        {/* Admin Trigger (Desktop) */}
-                        <button 
-                            onClick={() => setShowAdmin(true)}
-                            className="hover:opacity-50 transition-opacity text-red-500 font-bold text-xs flex items-center gap-2"
-                            title="Admin Access"
-                        >
-                             <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                            ADMIN
-                        </button>
+                        {/* Admin Trigger (Desktop) - Condition Added */}
+                        {isAdminEnabled && (
+                            <button 
+                                onClick={() => setShowAdmin(true)}
+                                className="hover:opacity-50 transition-opacity text-red-500 font-bold text-xs flex items-center gap-2"
+                                title="Admin Access"
+                            >
+                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                ADMIN
+                            </button>
+                        )}
                         <button onClick={toggleTheme} className="hover:opacity-70 transition-opacity">
                             {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
                         </button>
@@ -621,14 +627,18 @@ export default function Home() {
 
                     <div className="flex justify-between items-end border-t border-current border-opacity-10 pt-6">
                         <div className="flex gap-4 items-center">
-                             {/* Admin Trigger (Mobile) */}
-                            <button 
-                                onClick={() => { setShowAdmin(true); setIsMenuOpen(false); }}
-                                className="text-xs font-bold tracking-widest uppercase text-red-500"
-                            >
-                                [ ● ADMIN ]
-                            </button>
-                            <div className="w-[1px] h-3 bg-current opacity-20"></div>
+                             {/* Admin Trigger (Mobile) - Condition Added */}
+                            {isAdminEnabled && (
+                                <>
+                                    <button 
+                                        onClick={() => { setShowAdmin(true); setIsMenuOpen(false); }}
+                                        className="text-xs font-bold tracking-widest uppercase text-red-500"
+                                    >
+                                        [ ● ADMIN ]
+                                    </button>
+                                    <div className="w-[1px] h-3 bg-current opacity-20"></div>
+                                </>
+                            )}
                             <button 
                                 onClick={toggleTheme} 
                                 className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase"
@@ -662,7 +672,7 @@ export default function Home() {
             </main>
 
             {view === 'home' && (
-                <Footer className="fixed bottom-0 left-0 right-0 pointer-events-none [&>*]:pointer-events-auto" onOpenAdmin={() => setShowAdmin(true)} />
+                <Footer className="fixed bottom-0 left-0 right-0 pointer-events-none [&>*]:pointer-events-auto" onOpenAdmin={isAdminEnabled ? () => setShowAdmin(true) : undefined} />
             )}
 
             {view === 'detail' && selectedProjectId && (
