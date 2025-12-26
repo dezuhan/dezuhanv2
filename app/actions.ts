@@ -145,3 +145,89 @@ export async function uploadImage(formData: FormData) {
         throw new Error(error.message || "Failed to upload image");
     }
 }
+
+// --- Media Management ---
+
+export async function getMediaFiles() {
+    if (!GITHUB_TOKEN || !OWNER || !REPO) {
+        throw new Error("GitHub Configuration missing in .env");
+    }
+
+    const path = `database/media/image`;
+    const url = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`;
+
+    try {
+        const response = await fetch(url, { headers, cache: 'no-store' });
+        
+        if (response.status === 404) {
+            return []; // No media folder yet
+        }
+
+        if (!response.ok) {
+            throw new Error(`Failed to list media files`);
+        }
+
+        const data = await response.json();
+        
+        if (!Array.isArray(data)) {
+            return [];
+        }
+
+        // Map GitHub API response to useful format
+        return data.map((file: any) => ({
+            name: file.name,
+            path: file.path,
+            sha: file.sha,
+            url: file.download_url || `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${file.path}`
+        }));
+
+    } catch (error: any) {
+        console.error("Get Media Error:", error);
+        throw new Error(error.message);
+    }
+}
+
+export async function deleteImage(path: string) {
+     if (!GITHUB_TOKEN || !OWNER || !REPO) {
+        throw new Error("GitHub Configuration missing in .env");
+    }
+
+    // 1. Get the SHA of the file first (required for deletion)
+    const getUrl = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`;
+    let sha = '';
+    
+    try {
+        const getRes = await fetch(getUrl, { headers, cache: 'no-store' });
+        if (!getRes.ok) throw new Error("File not found");
+        const data = await getRes.json();
+        sha = data.sha;
+    } catch (e) {
+        throw new Error("Could not find file metadata for deletion");
+    }
+
+    // 2. Delete the file
+    const deleteUrl = `${BASE_URL}/repos/${OWNER}/${REPO}/contents/${path}`;
+    const body = {
+        message: `Delete media: ${path.split('/').pop()}`,
+        sha: sha,
+        branch: BRANCH
+    };
+
+    try {
+        const response = await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers,
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message);
+        }
+
+        return { success: true };
+    } catch (error: any) {
+         console.error("Delete Error:", error);
+         throw new Error(error.message || "Failed to delete file");
+    }
+}
