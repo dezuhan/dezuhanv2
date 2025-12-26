@@ -2,8 +2,9 @@ import { Buffer } from "buffer";
 
 // Configuration for the External Media Repository
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const MEDIA_OWNER = process.env.MEDIA_REPO_OWNER;
-const MEDIA_REPO = process.env.MEDIA_REPO_NAME;
+// Fallback to main repo owner/name if media-specific ones aren't set
+const MEDIA_OWNER = process.env.MEDIA_REPO_OWNER || process.env.GITHUB_OWNER;
+const MEDIA_REPO = process.env.MEDIA_REPO_NAME || process.env.GITHUB_REPO;
 const MEDIA_BRANCH = process.env.MEDIA_REPO_BRANCH || 'main';
 
 const BASE_API_URL = 'https://api.github.com';
@@ -23,8 +24,11 @@ export async function uploadToExternalRepo(
 ): Promise<string> {
     
     // 1. Validation
-    if (!GITHUB_TOKEN || !MEDIA_OWNER || !MEDIA_REPO) {
-        throw new Error("Media Repository Configuration is missing (MEDIA_REPO_OWNER, MEDIA_REPO_NAME)");
+    if (!GITHUB_TOKEN) {
+        throw new Error("GITHUB_TOKEN is missing in environment variables");
+    }
+    if (!MEDIA_OWNER || !MEDIA_REPO) {
+        throw new Error("Repository Configuration is missing. Ensure GITHUB_OWNER/REPO or MEDIA_REPO_OWNER/NAME are set.");
     }
 
     // 2. Prepare Path & Content

@@ -218,7 +218,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
         setIsUploading(true);
         const uploadedUrls: string[] = [];
-        let errors = 0;
+        let errorCount = 0;
+        let lastErrorMsg = "";
 
         try {
             const fileArray = Array.from(files);
@@ -230,19 +231,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
                     if (result && result.success && result.url) {
                         uploadedUrls.push(result.url);
                     } else {
-                        errors++;
+                        errorCount++;
                     }
-                } catch (err) {
-                    errors++;
+                } catch (err: any) {
+                    errorCount++;
+                    lastErrorMsg = err.message || "Unknown error";
+                    console.error("Upload error for file " + file.name, err);
                 }
             }
 
             if (uploadedUrls.length > 0) {
-                showMessage(`Uploaded ${uploadedUrls.length} image(s)${errors > 0 ? `, ${errors} failed` : ''}.`);
+                showMessage(`Uploaded ${uploadedUrls.length} image(s)${errorCount > 0 ? `, ${errorCount} failed` : ''}.`);
                 if (uploadCallback) uploadCallback(uploadedUrls);
                 if (activeTab === 'media') refreshMedia();
-            } else if (errors > 0) {
-                showMessage("Failed to upload images.", "error");
+            } else if (errorCount > 0) {
+                showMessage(`Failed to upload images. Error: ${lastErrorMsg || "Check console"}`, "error");
             }
 
         } catch (error: any) {
